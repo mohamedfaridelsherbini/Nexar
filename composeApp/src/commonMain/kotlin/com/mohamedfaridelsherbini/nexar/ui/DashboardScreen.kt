@@ -1,5 +1,6 @@
 package com.mohamedfaridelsherbini.nexar.ui
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -9,7 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
@@ -28,6 +28,17 @@ fun DashboardScreen(
     onCreateFolderClick: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    var filter by remember { mutableStateOf(DocumentFilter.All) }
+
+    val needsExportCount = remember(documents) { documents.count { it.pdfUri == null } }
+    val visibleDocuments = remember(documents, searchQuery, filter) {
+        val byFilter = when (filter) {
+            DocumentFilter.All -> documents
+            DocumentFilter.NeedsExport -> documents.filter { it.pdfUri == null }
+        }
+        if (searchQuery.isBlank()) byFilter
+        else byFilter.filter { it.name.contains(searchQuery.trim(), ignoreCase = true) }
+    }
 
     Box(
         modifier = Modifier
@@ -38,27 +49,29 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 24.dp)
-                .padding(top = 18.dp, bottom = 100.dp), // Extra bottom padding for FAB
+                .padding(top = 18.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp)
         ) {
-            // Top Bar
             NexarTopBar(
                 onSettingsClick = onSetStorageClick,
                 onCreateFolderClick = if (storageLocation != null) onCreateFolderClick else null
             )
 
-            // Storage Warning
             if (storageLocation == null) {
                 StorageWarningBanner(onClick = onSetStorageClick)
             }
 
-            // Search Input
             NexarSearchInput(
                 value = searchQuery,
                 onValueChange = { searchQuery = it }
             )
 
-            // Documents Header
+            QuickFilters(
+                selected = filter,
+                needsExportCount = needsExportCount,
+                onSelect = { filter = it }
+            )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -70,14 +83,14 @@ fun DashboardScreen(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
-                
+
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(18.dp),
-                    border = borderStroke(1.dp, NexarExtraTheme.colors.borderSubtle)
+                    border = BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle)
                 ) {
                     Text(
-                        text = "${documents.size} scans",
+                        text = "${visibleDocuments.size} scans",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
@@ -86,16 +99,21 @@ fun DashboardScreen(
                 }
             }
 
-            // Document List
-            if (documents.isEmpty()) {
+            if (visibleDocuments.isEmpty()) {
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
+                    val emptyText = when {
+                        documents.isEmpty() -> "No documents scanned yet."
+                        searchQuery.isNotBlank() -> "No matches for \"$searchQuery\"."
+                        filter == DocumentFilter.NeedsExport -> "Everything is exported."
+                        else -> "No documents to show."
+                    }
                     Text(
-                        text = "No documents scanned yet.",
+                        text = emptyText,
                         color = NexarExtraTheme.colors.foregroundSecondary
                     )
                 }
@@ -106,22 +124,22 @@ fun DashboardScreen(
                         .weight(1f),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(documents) { doc ->
+                    items(visibleDocuments) { doc ->
                         DocumentCard(
                             document = doc,
+                            exportEnabled = storageLocation != null,
                             onPreviewClick = { onDocumentClick(doc) },
                             onRenameClick = { onRenameClick(doc) },
-                            onExportClick = { onSaveToStorageClick(doc) }
+                            onExportClick = { onSaveToStorageClick(doc) },
+                            onConfigureExportClick = onSetStorageClick
                         )
                     }
                 }
             }
 
-            // Local Storage Status
-            LocalStorageStatus()
+            LocalStorageStatus(storageLocation = storageLocation)
         }
 
-        // Dominant Scan FAB
         Box(
             modifier = Modifier
                 .align(Alignment.BottomCenter)

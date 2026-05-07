@@ -14,99 +14,131 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            List {
-                if viewModel.storageFolderName == nil {
-                    Section {
-                        StorageBanner(
-                            title: "Storage location not set",
-                            message: "Choose a folder to export PDFs to Files or iCloud Drive.",
-                            tint: .orange
+            ZStack {
+                NexarColor.surfacePrimary.ignoresSafeArea()
+                
+                ScrollView {
+                    VStack(spacing: 18) {
+                        // Title Stack
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text("Documents")
+                                .font(.system(size: 34, weight: .bold))
+                                .foregroundStyle(NexarColor.foregroundPrimary)
+                            Text("Local scans on this iPhone")
+                                .font(.system(size: 15, weight: .medium))
+                                .foregroundStyle(NexarColor.foregroundSecondary)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 8)
+                        
+                        // Local Storage Status Card
+                        NexarLocalStatusCard(
+                            scanCount: viewModel.filteredDocuments.count,
+                            availableStorage: "2.4 GB" // Hardcoded as in .pen for design fidelity
                         )
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                    }
-                } else {
-                    Section {
-                        StorageBanner(
-                            title: "Export folder",
-                            message: viewModel.storageFolderName ?? "",
-                            tint: .blue
+                        
+                        // Search Input
+                        HStack(spacing: 10) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundStyle(NexarColor.foregroundMuted)
+                            TextField("Search scans, tags, or dates", text: $viewModel.searchText)
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .padding(.horizontal, 16)
+                        .frame(height: 52)
+                        .background(NexarColor.surfaceSecondary, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(NexarColor.borderSubtle, lineWidth: 1)
                         )
-                        .listRowInsets(EdgeInsets())
-                        .listRowBackground(Color.clear)
-                    }
-                }
-
-                Section("Recent Scans") {
-                    if viewModel.filteredDocuments.isEmpty {
-                        ContentUnavailableView(
-                            "No documents yet",
-                            systemImage: "doc.text.viewfinder",
-                            description: Text("Scan a document to build your local library.")
-                        )
-                        .frame(maxWidth: .infinity, alignment: .center)
-                    } else {
-                        ForEach(viewModel.filteredDocuments) { document in
-                            DocumentRow(
-                                document: document,
-                                canExport: viewModel.storageFolderName != nil,
-                                onPreview: {
-                                    viewModel.openPreview(for: document)
-                                },
-                                onExport: {
-                                    viewModel.exportDocument(document)
-                                },
-                                onRename: {
-                                    selectedDocument = document
-                                    renameText = document.name
-                                    showsRenameAlert = true
+                        
+                        // Recent Documents Surface
+                        VStack(spacing: 12) {
+                            HStack {
+                                Text("Recent scans")
+                                    .font(.system(size: 18, weight: .bold))
+                                    .foregroundStyle(NexarColor.foregroundPrimary)
+                                Spacer()
+                                Text("\(viewModel.filteredDocuments.count) documents")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(NexarColor.foregroundSecondary)
+                            }
+                            
+                            if viewModel.filteredDocuments.isEmpty {
+                                Text("No documents yet")
+                                    .foregroundStyle(NexarColor.foregroundSecondary)
+                                    .padding(.top, 20)
+                            } else {
+                                ForEach(viewModel.filteredDocuments) { document in
+                                    NexarDocumentRow(
+                                        document: document,
+                                        canExport: viewModel.storageFolderName != nil,
+                                        onPreview: {
+                                            viewModel.openPreview(for: document)
+                                        },
+                                        onExport: {
+                                            viewModel.exportDocument(document)
+                                        },
+                                        onRename: {
+                                            selectedDocument = document
+                                            renameText = document.name
+                                            showsRenameAlert = true
+                                        }
+                                    )
                                 }
-                            )
+                            }
                         }
-                        .onDelete(perform: viewModel.deleteDocuments)
+                        .padding(16)
+                        .background(NexarColor.surfaceSecondary, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                .stroke(NexarColor.borderSubtle, lineWidth: 1)
+                        )
                     }
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 140) // Space for bottom FAB
                 }
-            }
-            .listStyle(.insetGrouped)
-            .navigationTitle("Nexar")
-            .searchable(text: $viewModel.searchText, prompt: "Search your documents")
-            .toolbar {
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    if viewModel.storageFolderName != nil {
-                        Button {
-                            folderName = ""
-                            showsCreateFolderAlert = true
-                        } label: {
-                            Image(systemName: "folder.badge.plus")
-                        }
-                    }
-
-                    Button {
-                        showsFolderImporter = true
-                    } label: {
-                        Image(systemName: "externaldrive.badge.plus")
-                    }
-                }
-            }
-            .safeAreaInset(edge: .bottom) {
-                HStack {
+                
+                // Bottom Scan Action
+                VStack {
                     Spacer()
-
                     Button {
                         startScanning()
                     } label: {
-                        Label("Scan", systemImage: "doc.viewfinder")
-                            .font(.headline)
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 14)
-                            .background(Color.accentColor, in: Capsule())
-                            .foregroundStyle(.white)
-                            .shadow(color: Color.black.opacity(0.14), radius: 18, y: 8)
+                        HStack(spacing: 10) {
+                            Image(systemName: "viewfinder")
+                                .font(.system(size: 24))
+                            Text("Scan Document")
+                                .font(.system(size: 18, weight: .bold))
+                        }
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 64)
+                        .background(NexarColor.accentPrimary, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
+                        .foregroundStyle(.white)
+                        .shadow(color: NexarColor.accentPrimary.opacity(0.2), radius: 18, y: 8)
                     }
-                    .padding(.trailing, 20)
-                    .padding(.top, 8)
+                    .padding(.horizontal, 28)
+                    .padding(.bottom, 34)
                 }
-                .background(Color.clear)
+                .ignoresSafeArea(.keyboard)
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showsFolderImporter = true
+                    } label: {
+                        ZStack {
+                            Circle()
+                                .fill(NexarColor.surfaceSecondary)
+                                .frame(width: 44, height: 44)
+                                .overlay(
+                                    Circle().stroke(NexarColor.borderSubtle, lineWidth: 1)
+                                )
+                            Image(systemName: "person")
+                                .foregroundStyle(NexarColor.foregroundPrimary)
+                        }
+                    }
+                }
             }
         }
         .sheet(isPresented: $showsScanner) {
@@ -187,80 +219,6 @@ struct ContentView: View {
 #else
         showsScanner = true
 #endif
-    }
-}
-
-private struct StorageBanner: View {
-    let title: String
-    let message: String
-    let tint: Color
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.headline)
-            Text(message)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(16)
-        .background(tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(tint.opacity(0.18), lineWidth: 1)
-        )
-        .padding(.vertical, 4)
-    }
-}
-
-private struct DocumentRow: View {
-    let document: ScannedDocument
-    let canExport: Bool
-    let onPreview: () -> Void
-    let onExport: () -> Void
-    let onRename: () -> Void
-
-    var body: some View {
-        HStack(spacing: 14) {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.accentColor.opacity(0.12))
-                .frame(width: 52, height: 52)
-                .overlay {
-                    Image(systemName: "doc.richtext")
-                        .font(.title3)
-                        .foregroundStyle(Color.accentColor)
-                }
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(document.name)
-                    .font(.headline)
-                    .lineLimit(1)
-
-                Text("\(document.pageCount) page\(document.pageCount == 1 ? "" : "s")")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
-            HStack(spacing: 4) {
-                Button(action: onExport) {
-                    Image(systemName: canExport ? "square.and.arrow.up" : "externaldrive.badge.xmark")
-                        .foregroundStyle(canExport ? Color.accentColor : .secondary)
-                }
-                .buttonStyle(.plain)
-                .disabled(!canExport)
-
-                Button(action: onRename) {
-                    Image(systemName: "pencil")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onPreview)
     }
 }
 

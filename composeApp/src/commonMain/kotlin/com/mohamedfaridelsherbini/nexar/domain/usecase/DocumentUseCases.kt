@@ -35,3 +35,19 @@ class DeleteDocumentUseCase(
         documentRepository.deleteDocument(document)
     }
 }
+
+class UpdateDocumentUseCase(
+    private val documentRepository: DocumentRepository
+) {
+    suspend operator fun invoke(document: ScannedDocument) {
+        documentRepository.updateDocument(document)
+    }
+}
+
+class MarkExportedUseCase(
+    private val documentRepository: DocumentRepository
+) {
+    suspend operator fun invoke(id: String) {
+        documentRepository.markExported(id)
+    }
+}

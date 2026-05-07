@@ -16,10 +16,10 @@ struct ContentView: View {
         NavigationStack {
             ZStack {
                 NexarColor.surfacePrimary.ignoresSafeArea()
-                
+
                 ScrollView {
                     VStack(spacing: 18) {
-                        // Title Stack
+                        // Title stack — matches pen's "Dashboard Title" + "Dashboard Subtitle"
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Documents")
                                 .font(.system(size: 34, weight: .bold))
@@ -30,19 +30,24 @@ struct ContentView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 8)
-                        
-                        // Local Storage Status Card
+
+                        // Storage status card — warning state when no folder
                         NexarLocalStatusCard(
                             scanCount: viewModel.filteredDocuments.count,
-                            availableStorage: "2.4 GB" // Hardcoded as in .pen for design fidelity
+                            availableStorage: "2.4 GB",
+                            storageConfigured: viewModel.storageFolderName != nil,
+                            onConfigureTap: { showsFolderImporter = true }
                         )
-                        
-                        // Search Input
+
+                        // Search input
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
+                                .font(.system(size: 18))
                                 .foregroundStyle(NexarColor.foregroundMuted)
-                            TextField("Search scans, tags, or dates", text: $viewModel.searchText)
+                            TextField("Search name, text, category…", text: $viewModel.searchText)
                                 .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(NexarColor.foregroundPrimary)
+                                .tint(NexarColor.accentPrimary)
                         }
                         .padding(.horizontal, 16)
                         .frame(height: 52)
@@ -51,9 +56,19 @@ struct ContentView: View {
                             RoundedRectangle(cornerRadius: 18, style: .continuous)
                                 .stroke(NexarColor.borderSubtle, lineWidth: 1)
                         )
-                        
-                        // Recent Documents Surface
+
+                        // Quick filters
+                        HStack {
+                            NexarQuickFilters(
+                                selected: $viewModel.activeFilter,
+                                needsExportCount: viewModel.needsExportCount
+                            )
+                            Spacer()
+                        }
+
+                        // Recent documents surface
                         VStack(spacing: 12) {
+                            // List header
                             HStack {
                                 Text("Recent scans")
                                     .font(.system(size: 18, weight: .bold))
@@ -63,11 +78,12 @@ struct ContentView: View {
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundStyle(NexarColor.foregroundSecondary)
                             }
-                            
+
                             if viewModel.filteredDocuments.isEmpty {
-                                Text("No documents yet")
-                                    .foregroundStyle(NexarColor.foregroundSecondary)
-                                    .padding(.top, 20)
+                                NexarEmptyState(
+                                    filter: viewModel.activeFilter,
+                                    searchText: viewModel.searchText
+                                )
                             } else {
                                 ForEach(viewModel.filteredDocuments) { document in
                                     NexarDocumentRow(
@@ -77,7 +93,11 @@ struct ContentView: View {
                                             viewModel.openPreview(for: document)
                                         },
                                         onExport: {
-                                            viewModel.exportDocument(document)
+                                            if viewModel.storageFolderName != nil {
+                                                viewModel.exportDocument(document)
+                                            } else {
+                                                showsFolderImporter = true
+                                            }
                                         },
                                         onRename: {
                                             selectedDocument = document
@@ -96,10 +116,10 @@ struct ContentView: View {
                         )
                     }
                     .padding(.horizontal, 28)
-                    .padding(.bottom, 140) // Space for bottom FAB
+                    .padding(.bottom, 140)
                 }
-                
-                // Bottom Scan Action
+
+                // Dominant scan FAB — pen spec: h=64, r=32, teal, shadow y=8 blur=20 navy 20%
                 VStack {
                     Spacer()
                     Button {
@@ -107,15 +127,15 @@ struct ContentView: View {
                     } label: {
                         HStack(spacing: 10) {
                             Image(systemName: "viewfinder")
-                                .font(.system(size: 24))
-                            Text("Scan Document")
+                                .font(.system(size: 22, weight: .semibold))
+                            Text("Scan document")
                                 .font(.system(size: 18, weight: .bold))
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 64)
-                        .background(NexarColor.accentPrimary, in: RoundedRectangle(cornerRadius: 24, style: .continuous))
-                        .foregroundStyle(.white)
-                        .shadow(color: NexarColor.accentPrimary.opacity(0.2), radius: 18, y: 8)
+                        .background(NexarColor.accentPrimary, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+                        .foregroundStyle(NexarColor.onAccent)
+                        .shadow(color: Color(hex: "0F172A").opacity(0.20), radius: 20, x: 0, y: 8)
                     }
                     .padding(.horizontal, 28)
                     .padding(.bottom, 34)
@@ -123,6 +143,7 @@ struct ContentView: View {
                 .ignoresSafeArea(.keyboard)
             }
             .toolbar {
+                // Profile / settings button — pen: 44×44 circle, foreground-primary icon
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showsFolderImporter = true
@@ -130,26 +151,24 @@ struct ContentView: View {
                         ZStack {
                             Circle()
                                 .fill(NexarColor.surfaceSecondary)
-                                .frame(width: 44, height: 44)
-                                .overlay(
-                                    Circle().stroke(NexarColor.borderSubtle, lineWidth: 1)
-                                )
+                                .frame(width: 40, height: 40)
+                                .overlay(Circle().stroke(NexarColor.borderSubtle, lineWidth: 1))
                             Image(systemName: "person")
+                                .font(.system(size: 17, weight: .medium))
                                 .foregroundStyle(NexarColor.foregroundPrimary)
                         }
                     }
                 }
             }
         }
+        .tint(NexarColor.accentPrimary)
         .sheet(isPresented: $showsScanner) {
             DocumentScannerView(
                 onComplete: { images in
                     showsScanner = false
                     viewModel.handleScannedImages(images)
                 },
-                onCancel: {
-                    showsScanner = false
-                }
+                onCancel: { showsScanner = false }
             )
             .ignoresSafeArea()
         }
@@ -169,11 +188,8 @@ struct ContentView: View {
         }
         .alert("Create Folder", isPresented: $showsCreateFolderAlert) {
             TextField("Folder name", text: $folderName)
-            Button("Create") {
-                viewModel.createFolder(named: folderName)
-            }
-            Button("Cancel", role: .cancel) {
-            }
+            Button("Create") { viewModel.createFolder(named: folderName) }
+            Button("Cancel", role: .cancel) {}
         } message: {
             Text("Create a subfolder inside the selected export location.")
         }
@@ -183,31 +199,23 @@ struct ContentView: View {
                 guard let selectedDocument else { return }
                 viewModel.renameDocument(selectedDocument, to: renameText)
             }
-            Button("Cancel", role: .cancel) {
-            }
+            Button("Cancel", role: .cancel) {}
         } message: {
             Text("Update the document title shown in your library.")
         }
         .alert("Scanner Unavailable", isPresented: $showsSimulatorScanAlert) {
-            Button("OK", role: .cancel) {
-            }
+            Button("OK", role: .cancel) {}
         } message: {
-            Text("Document scanning requires a real iPhone or iPad. The iOS Simulator does not provide a working VisionKit camera scanner.")
+            Text("Document scanning requires a real iPhone or iPad.")
         }
         .alert(
             "Error",
             isPresented: Binding(
                 get: { viewModel.errorMessage != nil },
-                set: { isPresented in
-                    if !isPresented {
-                        viewModel.errorMessage = nil
-                    }
-                }
+                set: { if !$0 { viewModel.errorMessage = nil } }
             )
         ) {
-            Button("OK", role: .cancel) {
-                viewModel.errorMessage = nil
-            }
+            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
         } message: {
             Text(viewModel.errorMessage ?? "")
         }

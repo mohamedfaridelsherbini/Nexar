@@ -1,6 +1,7 @@
 package com.mohamedfaridelsherbini.nexar.domain.usecase
 
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
+import com.mohamedfaridelsherbini.nexar.domain.repository.DocumentRepository
 import com.mohamedfaridelsherbini.nexar.domain.repository.StorageRepository
 import kotlinx.coroutines.flow.Flow
 
@@ -21,23 +22,14 @@ class SetStorageLocationUseCase(
 }
 
 class SaveDocumentToStorageUseCase(
-    private val storageRepository: StorageRepository
+    private val storageRepository: StorageRepository,
+    private val documentRepository: DocumentRepository
 ) {
     suspend operator fun invoke(document: ScannedDocument): Boolean {
-        val sourceUri = document.pdfUri ?: return false
-        return storageRepository.saveDocument(
-            fileName = document.exportFileName(),
-            sourceUri = sourceUri
-        )
-    }
-
-    private fun ScannedDocument.exportFileName(): String {
-        val sanitizedName = name.trim().ifBlank { "Document" }
-        return if (sanitizedName.endsWith(".pdf", ignoreCase = true)) {
-            sanitizedName
-        } else {
-            "$sanitizedName.pdf"
-        }
+        if (document.pdfUri == null) return false
+        val success = storageRepository.saveDocument(document)
+        if (success) documentRepository.markExported(document.id)
+        return success
     }
 }
 
@@ -54,8 +46,10 @@ class CreateFolderUseCase(
 data class DashboardUseCases(
     val observeDocuments: ObserveDocumentsUseCase,
     val addScannedDocument: AddScannedDocumentUseCase,
+    val updateDocument: UpdateDocumentUseCase,
     val renameDocument: RenameDocumentUseCase,
     val deleteDocument: DeleteDocumentUseCase,
+    val markExported: MarkExportedUseCase,
     val observeStorageLocation: ObserveStorageLocationUseCase,
     val setStorageLocation: SetStorageLocationUseCase,
     val saveDocumentToStorage: SaveDocumentToStorageUseCase,

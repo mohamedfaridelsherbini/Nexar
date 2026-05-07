@@ -2,9 +2,16 @@ package com.mohamedfaridelsherbini.nexar
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import com.mohamedfaridelsherbini.nexar.ui.theme.NexarExtraTheme
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
@@ -25,7 +32,7 @@ import kotlinx.serialization.modules.subclass
 
 @Composable
 fun App() {
-    NexarTheme {
+    NexarTheme(dynamicColor = false) {
         val appContainer = remember { getAppContainer() }
         val navStateConfiguration = remember {
             SavedStateConfiguration {
@@ -40,7 +47,7 @@ fun App() {
         }
         val backStack = rememberNavBackStack(navStateConfiguration, Dashboard)
         val dashboardViewModel: DashboardViewModel = viewModel {
-            DashboardViewModel(appContainer.dashboardUseCases)
+            DashboardViewModel(appContainer.dashboardUseCases, appContainer.ocrProcessor)
         }
         val uiState by dashboardViewModel.uiState.collectAsState()
 
@@ -126,29 +133,19 @@ fun CreateFolderDialog(
     onDismiss: () -> Unit
 ) {
     var name by remember { mutableStateOf("") }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Create New Folder") },
-        text = {
-            TextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                placeholder = { Text("Folder name") }
-            )
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(name) }) {
-                Text("Create")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
+    NexarDialog(
+        title = "New folder",
+        confirmLabel = "Create",
+        confirmEnabled = name.isNotBlank(),
+        onConfirm = { onConfirm(name) },
+        onDismiss = onDismiss
+    ) {
+        NexarDialogField(
+            value = name,
+            onValueChange = { name = it },
+            placeholder = "Folder name"
+        )
+    }
 }
 
 @Composable
@@ -158,28 +155,109 @@ fun RenameDialog(
     onDismiss: () -> Unit
 ) {
     var name by remember { mutableStateOf(currentName) }
+    NexarDialog(
+        title = "Rename document",
+        confirmLabel = "Rename",
+        confirmEnabled = name.isNotBlank() && name != currentName,
+        onConfirm = { onConfirm(name) },
+        onDismiss = onDismiss
+    ) {
+        NexarDialogField(
+            value = name,
+            onValueChange = { name = it },
+            placeholder = "Document name"
+        )
+    }
+}
+
+@Composable
+private fun NexarDialog(
+    title: String,
+    confirmLabel: String,
+    confirmEnabled: Boolean,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+    content: @Composable () -> Unit
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename Document") },
-        text = {
-            TextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+        shape = RoundedCornerShape(24.dp),
+        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 0.dp,
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
+        text = { content() },
         confirmButton = {
-            Button(onClick = { onConfirm(name) }) {
-                Text("Rename")
+            Button(
+                onClick = onConfirm,
+                enabled = confirmEnabled,
+                shape = RoundedCornerShape(999.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    disabledContainerColor = MaterialTheme.colorScheme.outline
+                )
+            ) {
+                Text(confirmLabel, fontWeight = FontWeight.SemiBold)
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
+            TextButton(
+                onClick = onDismiss,
+                shape = RoundedCornerShape(999.dp)
+            ) {
+                Text(
+                    "Cancel",
+                    color = NexarExtraTheme.colors.foregroundSecondary,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
         }
     )
+}
+
+@Composable
+private fun NexarDialogField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    placeholder: String
+) {
+    Surface(
+        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(12.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            NexarExtraTheme.colors.borderSubtle
+        )
+    ) {
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            singleLine = true,
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            textStyle = MaterialTheme.typography.bodyMedium.copy(
+                color = MaterialTheme.colorScheme.onSurface
+            ),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 14.dp, vertical = 14.dp),
+            decorationBox = { inner ->
+                if (value.isEmpty()) {
+                    Text(
+                        text = placeholder,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = NexarExtraTheme.colors.foregroundMuted
+                    )
+                }
+                inner()
+            }
+        )
+    }
 }
 
 @Composable

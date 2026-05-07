@@ -1,24 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nexar "Document Aperture" mark — from Nexar.pen "Nexar Final Icon" lockup.
+  Viewport 176×176 (pen canvas) scaled to 108dp adaptive icon.
+
+  Colors:
+    Sheet:    #FFFFFF  ($surface-secondary on navy field)
+    Fold:     #334155  (subtle crease, slightly lighter than navy bg)
+    Teal:     #0EA5A4  ($accent-primary — scan beam + focus brackets)
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <!-- Document Body -->
+    android:viewportWidth="176"
+    android:viewportHeight="176">
+
+    <!-- Document Sheet  x=50 y=34 w=76 h=108 r=14 -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M36,30H60L72,42V78H36V30Z" />
-    <!-- Document Fold -->
+        android:pathData="M64,34 H112 A14,14 0 0 1 126,48 V128 A14,14 0 0 1 112,142 H64 A14,14 0 0 1 50,128 V48 A14,14 0 0 1 64,34 Z" />
+
+    <!-- Fold — top-right dog-ear. Drawn OVER sheet to punch the crease. -->
     <path
-        android:fillColor="#E0E0E0"
-        android:pathData="M60,30V42H72L60,30Z" />
-    <!-- Text lines (minimal representation) -->
+        android:fillColor="#334155"
+        android:pathData="M104,34 L126,34 L126,56 Z" />
+
+    <!-- Scan Beam  x=38 y=82 w=100 h=12 r=6 -->
     <path
-        android:fillColor="#BDBDBD"
-        android:pathData="M42,48H66V50H42V48Z M42,56H66V58H42V56Z M42,64H54V66H42V64Z" />
-    <!-- Scan Line -->
+        android:fillColor="#0EA5A4"
+        android:pathData="M44,82 H132 A6,6 0 0 1 132,94 H44 A6,6 0 0 1 44,82 Z" />
+
+    <!-- Focus bracket — Top Left horizontal  x=28 y=28 w=34 h=5 -->
     <path
-        android:strokeColor="#00E5FF"
-        android:strokeWidth="2.5"
-        android:pathData="M32,54H76"
-        android:strokeLineCap="round" />
+        android:fillColor="#0EA5A4"
+        android:pathData="M30.5,28 H59.5 A2.5,2.5 0 0 1 59.5,33 H30.5 A2.5,2.5 0 0 1 30.5,28 Z" />
+
+    <!-- Focus bracket — Top Left vertical  x=28 y=28 w=5 h=34 -->
+    <path
+        android:fillColor="#0EA5A4"
+        android:pathData="M28,30.5 A2.5,2.5 0 0 1 33,30.5 V59.5 A2.5,2.5 0 0 1 28,59.5 Z" />
+
+    <!-- Focus bracket — Bottom Right horizontal  x=114 y=148 w=34 h=5 -->
+    <path
+        android:fillColor="#0EA5A4"
+        android:pathData="M116.5,148 H145.5 A2.5,2.5 0 0 1 145.5,153 H116.5 A2.5,2.5 0 0 1 116.5,148 Z" />
+
+    <!-- Focus bracket — Bottom Right vertical  x=148 y=114 w=5 h=34 -->
+    <path
+        android:fillColor="#0EA5A4"
+        android:pathData="M148,116.5 A2.5,2.5 0 0 1 153,116.5 V145.5 A2.5,2.5 0 0 1 148,145.5 Z" />
+
 </vector>

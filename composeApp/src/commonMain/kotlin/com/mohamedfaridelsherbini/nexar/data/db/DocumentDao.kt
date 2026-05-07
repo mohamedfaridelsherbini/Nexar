@@ -19,4 +19,10 @@ interface DocumentDao {
 
     @Query("UPDATE documents SET name = :newName WHERE id = :id")
     suspend fun renameDocument(id: String, newName: String)
+
+    @Query("UPDATE documents SET ocrText = :ocrText, category = :category, tagsJson = :tagsJson, ocrProcessed = 1 WHERE id = :id")
+    suspend fun updateOcr(id: String, ocrText: String, category: String, tagsJson: String)
+
+    @Query("UPDATE documents SET isExportedToStorage = 1 WHERE id = :id")
+    suspend fun markExported(id: String)
 }

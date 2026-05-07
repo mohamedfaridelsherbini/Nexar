@@ -7,11 +7,45 @@ struct PreviewItem: Identifiable {
     let url: URL
 }
 
+enum DocumentListFilter: String, CaseIterable {
+    case all
+    case needsExport
+    case receipt
+    case invoice
+    case idDocument
+    case contract
+    case medical
+
+    var label: String {
+        switch self {
+        case .all:         return "All"
+        case .needsExport: return "Needs export"
+        case .receipt:     return "Receipts"
+        case .invoice:     return "Invoices"
+        case .idDocument:  return "IDs"
+        case .contract:    return "Contracts"
+        case .medical:     return "Medical"
+        }
+    }
+
+    var category: DocumentCategory? {
+        switch self {
+        case .receipt:     return .receipt
+        case .invoice:     return .invoice
+        case .idDocument:  return .idDocument
+        case .contract:    return .contract
+        case .medical:     return .medical
+        default:           return nil
+        }
+    }
+}
+
 @MainActor
 final class DashboardViewModel: ObservableObject {
     @Published private(set) var documents: [ScannedDocument] = []
     @Published private(set) var storageFolderName: String?
     @Published var searchText = ""
+    @Published var activeFilter: DocumentListFilter = .all
     @Published var previewItem: PreviewItem?
     @Published var errorMessage: String?
 
@@ -19,18 +53,36 @@ final class DashboardViewModel: ObservableObject {
 
     init(store: DocumentStore = DocumentStore()) {
         self.store = store
+        Task { await refresh() }
+    }
 
-        Task {
-            await refresh()
-        }
+    var needsExportCount: Int {
+        documents.filter { !$0.isExportedToStorage }.count
     }
 
     var filteredDocuments: [ScannedDocument] {
-        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !query.isEmpty else { return documents }
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
 
-        return documents.filter {
-            $0.name.localizedCaseInsensitiveContains(query)
+        let byFilter: [ScannedDocument]
+        switch activeFilter {
+        case .all:
+            byFilter = documents
+        case .needsExport:
+            byFilter = documents.filter { !$0.isExportedToStorage }
+        default:
+            if let cat = activeFilter.category {
+                byFilter = documents.filter { $0.category == cat }
+            } else {
+                byFilter = documents
+            }
+        }
+
+        guard !query.isEmpty else { return byFilter }
+        return byFilter.filter { doc in
+            doc.name.lowercased().contains(query) ||
+            doc.ocrText.lowercased().contains(query) ||
+            doc.category.rawValue.lowercased().contains(query) ||
+            doc.tags.contains { $0.lowercased().contains(query) }
         }
     }
 
@@ -72,12 +124,9 @@ final class DashboardViewModel: ObservableObject {
 
     func deleteDocuments(at offsets: IndexSet) {
         let items = offsets.map { filteredDocuments[$0] }
-
         Task {
             do {
-                for item in items {
-                    try await store.deleteDocument(item)
-                }
+                for item in items { try await store.deleteDocument(item) }
                 documents.removeAll { doc in items.contains(doc) }
             } catch {
                 errorMessage = error.localizedDescription
@@ -98,11 +147,8 @@ final class DashboardViewModel: ObservableObject {
     func createFolder(named folderName: String) {
         let trimmed = folderName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-
         Task {
-            do {
-                try await store.createFolder(named: trimmed)
-            } catch {
+            do { try await store.createFolder(named: trimmed) } catch {
                 errorMessage = error.localizedDescription
             }
         }
@@ -112,6 +158,9 @@ final class DashboardViewModel: ObservableObject {
         Task {
             do {
                 try await store.exportDocument(document)
+                if let index = documents.firstIndex(where: { $0.id == document.id }) {
+                    documents[index].isExportedToStorage = true
+                }
             } catch {
                 errorMessage = error.localizedDescription
             }

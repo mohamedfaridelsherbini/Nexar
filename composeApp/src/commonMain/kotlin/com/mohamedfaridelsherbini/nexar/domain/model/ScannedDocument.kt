@@ -8,5 +8,11 @@ data class ScannedDocument(
     val name: String,
     val dateMillis: Long,
     val imageUris: List<String>,
-    val pdfUri: String? = null
+    val pdfUri: String? = null,
+    val ocrText: String = "",
+    val category: DocumentCategory = DocumentCategory.Other,
+    val tags: List<String> = emptyList(),
+    val isExportedToStorage: Boolean = false,
+    /** True when OCR has been attempted (whether or not text was found). */
+    val ocrProcessed: Boolean = false
 )

@@ -5,6 +5,8 @@ import com.mohamedfaridelsherbini.nexar.data.db.DocumentEntity
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import com.mohamedfaridelsherbini.nexar.domain.repository.DocumentRepository
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class DocumentRepositoryImpl(private val dao: DocumentDao) : DocumentRepository {
     override fun observeDocuments() =
@@ -14,11 +16,19 @@ class DocumentRepositoryImpl(private val dao: DocumentDao) : DocumentRepository 
         dao.insertDocument(DocumentEntity.fromDomain(document))
     }
 
+    override suspend fun updateDocument(document: ScannedDocument) {
+        dao.updateDocument(DocumentEntity.fromDomain(document))
+    }
+
     override suspend fun renameDocument(id: String, newName: String) {
         dao.renameDocument(id, newName)
     }
 
     override suspend fun deleteDocument(document: ScannedDocument) {
         dao.deleteDocument(DocumentEntity.fromDomain(document))
+    }
+
+    override suspend fun markExported(id: String) {
+        dao.markExported(id)
     }
 }

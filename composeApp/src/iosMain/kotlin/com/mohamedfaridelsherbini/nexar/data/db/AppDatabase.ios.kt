@@ -15,6 +15,7 @@ actual fun getDatabaseBuilder(): RoomDatabase.Builder<AppDatabase> {
         name = dbFilePath,
         factory = { AppDatabaseConstructor.initialize() }
     ).setDriver(BundledSQLiteDriver())
+        .addMigrations(MIGRATION_1_2)
 }
 
 @OptIn(ExperimentalForeignApi::class)

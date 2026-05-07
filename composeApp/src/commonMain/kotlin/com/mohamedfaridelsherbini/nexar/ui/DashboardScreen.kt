@@ -13,8 +13,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
+import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardFilter
 import com.mohamedfaridelsherbini.nexar.ui.components.*
 import com.mohamedfaridelsherbini.nexar.ui.theme.NexarExtraTheme
+
 
 @Composable
 fun DashboardScreen(
@@ -28,16 +30,29 @@ fun DashboardScreen(
     onCreateFolderClick: () -> Unit
 ) {
     var searchQuery by remember { mutableStateOf("") }
-    var filter by remember { mutableStateOf(DocumentFilter.All) }
+    var filter by remember { mutableStateOf(DashboardFilter.All) }
 
-    val needsExportCount = remember(documents) { documents.count { it.pdfUri == null } }
+    val needsExportCount = remember(documents) { documents.count { !it.isExportedToStorage } }
+
     val visibleDocuments = remember(documents, searchQuery, filter) {
         val byFilter = when (filter) {
-            DocumentFilter.All -> documents
-            DocumentFilter.NeedsExport -> documents.filter { it.pdfUri == null }
+            DashboardFilter.All -> documents
+            DashboardFilter.NeedsExport -> documents.filter { !it.isExportedToStorage }
+            else -> {
+                val cat = filter.toCategory()
+                if (cat != null) documents.filter { it.category == cat } else documents
+            }
         }
         if (searchQuery.isBlank()) byFilter
-        else byFilter.filter { it.name.contains(searchQuery.trim(), ignoreCase = true) }
+        else {
+            val q = searchQuery.trim().lowercase()
+            byFilter.filter { doc ->
+                doc.name.lowercase().contains(q) ||
+                    doc.ocrText.lowercase().contains(q) ||
+                    doc.category.displayName.lowercase().contains(q) ||
+                    doc.tags.any { it.lowercase().contains(q) }
+            }
+        }
     }
 
     Box(
@@ -106,16 +121,7 @@ fun DashboardScreen(
                         .weight(1f),
                     contentAlignment = Alignment.Center
                 ) {
-                    val emptyText = when {
-                        documents.isEmpty() -> "No documents scanned yet."
-                        searchQuery.isNotBlank() -> "No matches for \"$searchQuery\"."
-                        filter == DocumentFilter.NeedsExport -> "Everything is exported."
-                        else -> "No documents to show."
-                    }
-                    Text(
-                        text = emptyText,
-                        color = NexarExtraTheme.colors.foregroundSecondary
-                    )
+                    NexarEmptyState(filter = filter, searchQuery = searchQuery)
                 }
             } else {
                 LazyColumn(

@@ -46,6 +46,7 @@ kotlin {
             
             // ML Kit
             implementation(libs.google.mlkit.document.scanner)
+            implementation(libs.google.mlkit.text.recognition)
             
             // Room
             implementation(libs.androidx.room.runtime)

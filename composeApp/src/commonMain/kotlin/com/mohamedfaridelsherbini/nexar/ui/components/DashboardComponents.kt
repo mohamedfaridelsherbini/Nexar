@@ -5,7 +5,9 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -16,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -27,30 +30,19 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.mohamedfaridelsherbini.nexar.ui.theme.NexarExtraTheme
+import com.mohamedfaridelsherbini.nexar.domain.model.DocumentCategory
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
+import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardFilter
+import com.mohamedfaridelsherbini.nexar.ui.theme.NexarExtraTheme
 
-// On-accent text color used on top of the teal primary, per Nexar.pen ($on-tertiary).
 private val NexarOnAccent = Color(0xFF042F2E)
 
-enum class DocumentFilter { All, NeedsExport }
+// ─── Logo mark ────────────────────────────────────────────────────────────────
 
-/**
- * Nexar "Document Aperture" mark from Nexar.pen.
- *
- * Layout is normalized to a 188×188 design field (matching the pen's "Constructed Mark Field"),
- * so all elements stay proportional at any rendered [size].
- *
- * Composition:
- *  - rounded square field
- *  - white document sheet with a folded top-right corner
- *  - horizontal teal scan beam crossing the sheet
- *  - four teal corner focus brackets framing the sheet
- */
 @Composable
 fun NexarLogo(
     modifier: Modifier = Modifier,
-    size: Dp = 30.dp,
+    size: Dp = 32.dp,
     fieldColor: Color = MaterialTheme.colorScheme.onSurface,
     sheetColor: Color = MaterialTheme.colorScheme.surface,
     foldColor: Color = NexarExtraTheme.colors.borderSubtle,
@@ -63,75 +55,46 @@ fun NexarLogo(
             .clip(RoundedCornerShape(fieldRadius))
             .background(fieldColor)
     ) {
-        val unit = this.size.minDimension / 188f
-        fun u(v: Float) = v * unit
+        val u = this.size.minDimension / 188f
 
-        // Document sheet: x=56,y=38, 76×112, r=12
         drawRoundRect(
             color = sheetColor,
-            topLeft = Offset(u(56f), u(38f)),
-            size = Size(u(76f), u(112f)),
-            cornerRadius = CornerRadius(u(12f), u(12f))
+            topLeft = Offset(56 * u, 38 * u),
+            size = Size(76 * u, 112 * u),
+            cornerRadius = CornerRadius(12 * u, 12 * u)
         )
+        drawPath(
+            Path().apply {
+                moveTo(112 * u, 38 * u)
+                lineTo(132 * u, 38 * u)
+                lineTo(132 * u, 58 * u)
+                close()
+            },
+            foldColor
+        )
+        drawRoundRect(
+            color = accentColor,
+            topLeft = Offset(44 * u, 88 * u),
+            size = Size(100 * u, 12 * u),
+            cornerRadius = CornerRadius(6 * u, 6 * u)
+        )
+        drawRoundRect(color = accentColor, topLeft = Offset(30 * u, 30 * u), size = Size(36 * u, 5 * u), cornerRadius = CornerRadius(3 * u, 3 * u))
+        drawRoundRect(color = accentColor, topLeft = Offset(30 * u, 30 * u), size = Size(5 * u, 36 * u), cornerRadius = CornerRadius(3 * u, 3 * u))
+        drawRoundRect(color = accentColor, topLeft = Offset(122 * u, 153 * u), size = Size(36 * u, 5 * u), cornerRadius = CornerRadius(3 * u, 3 * u))
+        drawRoundRect(color = accentColor, topLeft = Offset(153 * u, 122 * u), size = Size(5 * u, 36 * u), cornerRadius = CornerRadius(3 * u, 3 * u))
 
-        // Folded top-right corner triangle
-        val foldPath = Path().apply {
-            moveTo(u(112f), u(38f))
-            lineTo(u(132f), u(38f))
-            lineTo(u(132f), u(58f))
-            close()
-        }
-        drawPath(foldPath, foldColor)
-
-        // Horizontal scan beam: x=44,y=88, 100×12, r=6
-        drawRoundRect(
-            color = accentColor,
-            topLeft = Offset(u(44f), u(88f)),
-            size = Size(u(100f), u(12f)),
-            cornerRadius = CornerRadius(u(6f), u(6f))
-        )
-
-        // Corner focus brackets (top-left + bottom-right pairs), r=3
-        // Top edge piece
-        drawRoundRect(
-            color = accentColor,
-            topLeft = Offset(u(30f), u(30f)),
-            size = Size(u(36f), u(5f)),
-            cornerRadius = CornerRadius(u(3f), u(3f))
-        )
-        // Left edge piece
-        drawRoundRect(
-            color = accentColor,
-            topLeft = Offset(u(30f), u(30f)),
-            size = Size(u(5f), u(36f)),
-            cornerRadius = CornerRadius(u(3f), u(3f))
-        )
-        // Bottom edge piece
-        drawRoundRect(
-            color = accentColor,
-            topLeft = Offset(u(122f), u(153f)),
-            size = Size(u(36f), u(5f)),
-            cornerRadius = CornerRadius(u(3f), u(3f))
-        )
-        // Right edge piece
-        drawRoundRect(
-            color = accentColor,
-            topLeft = Offset(u(153f), u(122f)),
-            size = Size(u(5f), u(36f)),
-            cornerRadius = CornerRadius(u(3f), u(3f))
-        )
-
-        // Subtle inside stroke on the field, mirroring the pen's 1pt border-subtle outline.
-        val strokeInset = u(0.5f)
+        val inset = 0.5f * u
         drawRoundRect(
             color = foldColor,
-            topLeft = Offset(strokeInset, strokeInset),
-            size = Size(this.size.width - strokeInset * 2f, this.size.height - strokeInset * 2f),
-            cornerRadius = CornerRadius(u(24f), u(24f)),
-            style = Stroke(width = u(1f))
+            topLeft = Offset(inset, inset),
+            size = Size(this.size.width - inset * 2, this.size.height - inset * 2),
+            cornerRadius = CornerRadius(24 * u, 24 * u),
+            style = Stroke(width = u)
         )
     }
 }
+
+// ─── Top bar ──────────────────────────────────────────────────────────────────
 
 @Composable
 fun NexarTopBar(
@@ -144,7 +107,7 @@ fun NexarTopBar(
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(16.dp))
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -153,13 +116,13 @@ fun NexarTopBar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            NexarLogo()
-            Column {
+            NexarLogo(size = 32.dp)
+            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text(
                     text = "Nexar",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.ExtraBold
                 )
                 Text(
                     text = "Documents scanned locally",
@@ -171,46 +134,49 @@ fun NexarTopBar(
 
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (onCreateFolderClick != null) {
-                Surface(
-                    modifier = Modifier.size(44.dp),
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface,
-                    border = BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle),
+                TopBarIconButton(
+                    icon = Icons.Default.CreateNewFolder,
+                    contentDescription = "Create folder",
                     onClick = onCreateFolderClick
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Default.CreateNewFolder,
-                            contentDescription = "Create Folder",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                }
+                )
             }
-
-            Surface(
-                modifier = Modifier.size(44.dp),
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface,
-                border = BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle),
+            TopBarIconButton(
+                icon = Icons.Default.Settings,
+                contentDescription = "Storage settings",
                 onClick = onSettingsClick
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = Icons.Default.FolderZip,
-                        contentDescription = "Storage Settings",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
+            )
         }
     }
 }
 
 @Composable
-fun StorageWarningBanner(
+private fun TopBarIconButton(
+    icon: ImageVector,
+    contentDescription: String,
     onClick: () -> Unit
 ) {
+    Surface(
+        modifier = Modifier.size(40.dp),
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle),
+        onClick = onClick
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                tint = NexarExtraTheme.colors.foregroundSecondary,
+                modifier = Modifier.size(18.dp)
+            )
+        }
+    }
+}
+
+// ─── Warning banner ───────────────────────────────────────────────────────────
+
+@Composable
+fun StorageWarningBanner(onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -226,8 +192,8 @@ fun StorageWarningBanner(
             tint = Color.White,
             modifier = Modifier.size(22.dp)
         )
-        Spacer(modifier = Modifier.width(12.dp))
-        Column {
+        Spacer(Modifier.width(12.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = "Export folder missing",
                 color = Color.White,
@@ -236,26 +202,28 @@ fun StorageWarningBanner(
             )
             Text(
                 text = "Choose a persistent folder before exporting PDFs.",
-                color = Color.White,
+                color = Color.White.copy(alpha = 0.88f),
                 style = MaterialTheme.typography.bodySmall
             )
         }
     }
 }
 
+// ─── Search ───────────────────────────────────────────────────────────────────
+
 @Composable
 fun NexarSearchInput(
     value: String,
     onValueChange: (String) -> Unit,
-    placeholder: String = "Search scans, dates, or folders"
+    placeholder: String = "Search name, text, category…"
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .height(54.dp)
-            .clip(RoundedCornerShape(27.dp))
+            .height(50.dp)
+            .clip(RoundedCornerShape(25.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
-            .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(27.dp))
+            .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(25.dp))
             .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -263,9 +231,9 @@ fun NexarSearchInput(
             imageVector = Icons.Default.Search,
             contentDescription = null,
             tint = NexarExtraTheme.colors.foregroundSecondary,
-            modifier = Modifier.size(19.dp)
+            modifier = Modifier.size(18.dp)
         )
-        Spacer(modifier = Modifier.width(10.dp))
+        Spacer(Modifier.width(10.dp))
         Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
             BasicTextField(
                 value = value,
@@ -289,13 +257,13 @@ fun NexarSearchInput(
             )
         }
         if (value.isNotEmpty()) {
-            Spacer(modifier = Modifier.width(8.dp))
+            Spacer(Modifier.width(8.dp))
             Icon(
                 imageVector = Icons.Default.Close,
-                contentDescription = "Clear search",
+                contentDescription = "Clear",
                 tint = NexarExtraTheme.colors.foregroundSecondary,
                 modifier = Modifier
-                    .size(18.dp)
+                    .size(16.dp)
                     .clip(CircleShape)
                     .clickable { onValueChange("") }
             )
@@ -303,23 +271,55 @@ fun NexarSearchInput(
     }
 }
 
+// ─── Quick filters ────────────────────────────────────────────────────────────
+
 @Composable
 fun QuickFilters(
-    selected: DocumentFilter,
+    selected: DashboardFilter,
     needsExportCount: Int,
-    onSelect: (DocumentFilter) -> Unit
+    onSelect: (DashboardFilter) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         QuickFilterChip(
             label = "All",
-            selected = selected == DocumentFilter.All,
-            onClick = { onSelect(DocumentFilter.All) }
+            selected = selected == DashboardFilter.All,
+            onClick = { onSelect(DashboardFilter.All) }
         )
         QuickFilterChip(
             label = if (needsExportCount > 0) "Needs export · $needsExportCount" else "Needs export",
-            selected = selected == DocumentFilter.NeedsExport,
+            selected = selected == DashboardFilter.NeedsExport,
             accent = NexarExtraTheme.colors.warning,
-            onClick = { onSelect(DocumentFilter.NeedsExport) }
+            onClick = { onSelect(DashboardFilter.NeedsExport) }
+        )
+        QuickFilterChip(
+            label = "Receipts",
+            selected = selected == DashboardFilter.Receipt,
+            onClick = { onSelect(DashboardFilter.Receipt) }
+        )
+        QuickFilterChip(
+            label = "Invoices",
+            selected = selected == DashboardFilter.Invoice,
+            onClick = { onSelect(DashboardFilter.Invoice) }
+        )
+        QuickFilterChip(
+            label = "IDs",
+            selected = selected == DashboardFilter.IdDocument,
+            onClick = { onSelect(DashboardFilter.IdDocument) }
+        )
+        QuickFilterChip(
+            label = "Contracts",
+            selected = selected == DashboardFilter.Contract,
+            onClick = { onSelect(DashboardFilter.Contract) }
+        )
+        QuickFilterChip(
+            label = "Medical",
+            selected = selected == DashboardFilter.Medical,
+            onClick = { onSelect(DashboardFilter.Medical) }
         )
     }
 }
@@ -331,18 +331,18 @@ private fun QuickFilterChip(
     accent: Color = MaterialTheme.colorScheme.primary,
     onClick: () -> Unit
 ) {
-    val containerColor = if (selected) accent else MaterialTheme.colorScheme.surface
-    val contentColor = if (selected) NexarOnAccent else MaterialTheme.colorScheme.onSurface
+    val containerColor = if (selected) accent else MaterialTheme.colorScheme.surfaceVariant
+    val contentColor = if (selected) NexarOnAccent else NexarExtraTheme.colors.foregroundSecondary
     Surface(
-        modifier = Modifier.height(36.dp),
+        modifier = Modifier.height(34.dp),
         shape = CircleShape,
         color = containerColor,
         border = if (selected) null else BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle),
         onClick = onClick
     ) {
-        Row(
+        Box(
             modifier = Modifier.padding(horizontal = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
+            contentAlignment = Alignment.Center
         ) {
             Text(
                 text = label,
@@ -354,6 +354,40 @@ private fun QuickFilterChip(
     }
 }
 
+// ─── Category pill ────────────────────────────────────────────────────────────
+
+@Composable
+fun CategoryPill(category: DocumentCategory) {
+    if (category == DocumentCategory.Other) return
+    val (bg, fg) = when (category) {
+        DocumentCategory.Receipt -> Pair(Color(0xFFFFF3CD), Color(0xFF856404))
+        DocumentCategory.Invoice -> Pair(Color(0xFFD1ECF1), Color(0xFF0C5460))
+        DocumentCategory.IdDocument -> Pair(Color(0xFFD4EDDA), Color(0xFF155724))
+        DocumentCategory.Contract -> Pair(Color(0xFFE2D9F3), Color(0xFF4A235A))
+        DocumentCategory.Medical -> Pair(Color(0xFFFFE0E0), Color(0xFF7B1818))
+        DocumentCategory.Other -> Pair(MaterialTheme.colorScheme.surfaceVariant, NexarExtraTheme.colors.foregroundMuted)
+    }
+    Surface(
+        shape = CircleShape,
+        color = bg,
+        modifier = Modifier.height(22.dp)
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 10.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = category.displayName,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = fg
+            )
+        }
+    }
+}
+
+// ─── Document card ────────────────────────────────────────────────────────────
+
 @Composable
 fun DocumentCard(
     document: ScannedDocument,
@@ -363,7 +397,6 @@ fun DocumentCard(
     onExportClick: () -> Unit,
     onConfigureExportClick: () -> Unit
 ) {
-    val isExported = document.pdfUri != null
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -373,41 +406,54 @@ fun DocumentCard(
             .padding(16.dp),
         verticalAlignment = Alignment.Top
     ) {
-        Box(
-            modifier = Modifier
-                .size(52.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.primary),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.Description,
-                contentDescription = null,
-                tint = NexarOnAccent,
-                modifier = Modifier.size(25.dp)
-            )
-        }
+        NexarLogo(
+            size = 52.dp,
+            fieldColor = MaterialTheme.colorScheme.primary,
+            sheetColor = NexarOnAccent.copy(alpha = 0.18f),
+            foldColor = NexarOnAccent.copy(alpha = 0.28f),
+            accentColor = Color.White
+        )
 
-        Spacer(modifier = Modifier.width(14.dp))
+        Spacer(Modifier.width(14.dp))
 
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = document.name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1
             )
-            val statusText = when {
-                isExported -> "${document.imageUris.size} pages • Exported"
-                else -> "${document.imageUris.size} pages • PDF ready"
+            Spacer(Modifier.height(3.dp))
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val pages = document.imageUris.size
+                val exportStatus = if (document.isExportedToStorage) "Exported" else "Ready to export"
+                Text(
+                    text = "${pages} ${if (pages == 1) "page" else "pages"} · $exportStatus",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = NexarExtraTheme.colors.foregroundMuted
+                )
             }
-            Text(
-                text = statusText,
-                style = MaterialTheme.typography.bodySmall,
-                color = NexarExtraTheme.colors.foregroundMuted
-            )
-            Spacer(modifier = Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+
+            if (document.category != DocumentCategory.Other || document.ocrProcessed) {
+                Spacer(Modifier.height(5.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (document.category != DocumentCategory.Other) {
+                        CategoryPill(document.category)
+                    }
+                    OcrStatusChip(document)
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) {
                 DocumentActionChip(
                     icon = Icons.Default.Visibility,
                     label = "Preview",
@@ -420,8 +466,8 @@ fun DocumentCard(
                 )
                 if (exportEnabled) {
                     DocumentActionChip(
-                        icon = Icons.Default.Share,
-                        label = "Export",
+                        icon = if (document.isExportedToStorage) Icons.Default.CheckCircle else Icons.Default.Share,
+                        label = if (document.isExportedToStorage) "Re-export" else "Export",
                         onClick = onExportClick
                     )
                 } else {
@@ -438,6 +484,31 @@ fun DocumentCard(
 }
 
 @Composable
+private fun OcrStatusChip(document: ScannedDocument) {
+    val (label, color) = when {
+        !document.ocrProcessed -> return
+        document.ocrText.isNotBlank() -> Pair("Text recognized", NexarExtraTheme.colors.success)
+        else -> Pair("No text found", NexarExtraTheme.colors.foregroundMuted)
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = color
+        )
+    }
+}
+
+@Composable
 fun DocumentActionChip(
     icon: ImageVector,
     label: String,
@@ -445,9 +516,9 @@ fun DocumentActionChip(
     accent: Color? = null
 ) {
     val borderColor = accent ?: NexarExtraTheme.colors.borderSubtle
-    val tint = accent ?: MaterialTheme.colorScheme.onSurface
+    val tint = accent ?: NexarExtraTheme.colors.foregroundSecondary
     Surface(
-        modifier = Modifier.height(34.dp),
+        modifier = Modifier.height(32.dp),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, borderColor),
@@ -461,10 +532,10 @@ fun DocumentActionChip(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                modifier = Modifier.size(15.dp),
+                modifier = Modifier.size(13.dp),
                 tint = tint
             )
-            Spacer(modifier = Modifier.width(5.dp))
+            Spacer(Modifier.width(5.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall,
@@ -475,14 +546,60 @@ fun DocumentActionChip(
     }
 }
 
+// ─── Empty state ──────────────────────────────────────────────────────────────
+
 @Composable
-fun LocalStorageStatus(
-    storageLocation: String?
+fun NexarEmptyState(
+    filter: DashboardFilter,
+    searchQuery: String
 ) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        NexarLogo(
+            size = 72.dp,
+            fieldColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+            sheetColor = MaterialTheme.colorScheme.surfaceVariant,
+            foldColor = NexarExtraTheme.colors.borderSubtle,
+            accentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+        )
+        val heading = when {
+            searchQuery.isNotBlank() -> "No matches found"
+            filter == DashboardFilter.NeedsExport -> "Everything exported"
+            filter != DashboardFilter.All -> "No ${filter.label.lowercase()} found"
+            else -> "No documents yet"
+        }
+        val body = when {
+            searchQuery.isNotBlank() -> "Try a different name or search term. OCR text and categories are also searched."
+            filter == DashboardFilter.NeedsExport -> "All your scans have been exported."
+            filter != DashboardFilter.All -> "Scan a document and Nexar will auto-detect its category."
+            else -> "Tap Scan document below to capture your first document."
+        }
+        Text(
+            text = heading,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = body,
+            style = MaterialTheme.typography.bodySmall,
+            color = NexarExtraTheme.colors.foregroundSecondary
+        )
+    }
+}
+
+// ─── Storage status ───────────────────────────────────────────────────────────
+
+@Composable
+fun LocalStorageStatus(storageLocation: String?) {
     val configured = storageLocation != null
     val dotColor = if (configured) NexarExtraTheme.colors.success else NexarExtraTheme.colors.warning
     val message = if (configured) {
-        "Exports save to ${storageLocation!!.shortStoragePath()}. Originals stay on this device."
+        val path = storageLocation?.shortPath() ?: ""
+        "Exports save to $path (category/year folders). Originals stay on this device."
     } else {
         "Local scans stay on this device until you choose an export folder."
     }
@@ -492,63 +609,67 @@ fun LocalStorageStatus(
             .clip(RoundedCornerShape(16.dp))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(16.dp))
-            .padding(16.dp),
+            .padding(14.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
             modifier = Modifier
-                .size(12.dp)
+                .size(8.dp)
                 .clip(CircleShape)
                 .background(dotColor)
         )
-        Spacer(modifier = Modifier.width(12.dp))
+        Spacer(Modifier.width(10.dp))
         Text(
             text = message,
             style = MaterialTheme.typography.bodySmall,
-            color = NexarExtraTheme.colors.foregroundSecondary
+            color = NexarExtraTheme.colors.foregroundSecondary,
+            lineHeight = MaterialTheme.typography.bodySmall.fontSize * 1.35f
         )
     }
 }
 
-private fun String.shortStoragePath(): String {
-    val decoded = this.substringAfterLast('/').ifEmpty { this }
-    return decoded.take(40)
-}
+private fun String.shortPath() = substringAfterLast('/').ifEmpty { this }.take(36)
+
+// ─── FAB ──────────────────────────────────────────────────────────────────────
 
 @Composable
-fun NexarFAB(
-    onClick: () -> Unit
-) {
+fun NexarFAB(onClick: () -> Unit) {
     Button(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(64.dp),
+            .height(64.dp)
+            .shadow(
+                elevation = 20.dp,
+                shape = RoundedCornerShape(32.dp),
+                ambientColor = Color(0x330F172A),
+                spotColor = Color(0x330F172A)
+            ),
         shape = RoundedCornerShape(32.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,
             contentColor = NexarOnAccent
         ),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+        elevation = ButtonDefaults.buttonElevation(
+            defaultElevation = 0.dp,
+            pressedElevation = 0.dp
+        )
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                imageVector = Icons.Default.QrCodeScanner,
-                contentDescription = null,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(10.dp))
-            Text(
-                text = "Scan document",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
+        Icon(
+            imageVector = Icons.Default.QrCodeScanner,
+            contentDescription = null,
+            modifier = Modifier.size(22.dp)
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = "Scan document",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
+
+// ─── Utility ──────────────────────────────────────────────────────────────────
 
 @Composable
 fun borderStroke(width: Dp, color: Color) = BorderStroke(width, color)

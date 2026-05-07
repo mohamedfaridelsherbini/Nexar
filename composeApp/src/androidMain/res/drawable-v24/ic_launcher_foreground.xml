@@ -1,0 +1,24 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Document Body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M36,30H60L72,42V78H36V30Z" />
+    <!-- Document Fold -->
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M60,30V42H72L60,30Z" />
+    <!-- Text lines (minimal representation) -->
+    <path
+        android:fillColor="#BDBDBD"
+        android:pathData="M42,48H66V50H42V48Z M42,56H66V58H42V56Z M42,64H54V66H42V64Z" />
+    <!-- Scan Line -->
+    <path
+        android:strokeColor="#00E5FF"
+        android:strokeWidth="2.5"
+        android:pathData="M32,54H76"
+        android:strokeLineCap="round" />
+</vector>

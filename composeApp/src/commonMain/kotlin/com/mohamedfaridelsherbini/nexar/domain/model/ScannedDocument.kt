@@ -1,0 +1,12 @@
+package com.mohamedfaridelsherbini.nexar.domain.model
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class ScannedDocument(
+    val id: String,
+    val name: String,
+    val dateMillis: Long,
+    val imageUris: List<String>,
+    val pdfUri: String? = null
+)

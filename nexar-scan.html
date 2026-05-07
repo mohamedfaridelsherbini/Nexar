@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nexar — Scan</title>
+<style>
+  /* ── Design Tokens ─────────────────────────────────────────── */
+  :root {
+    --color-primary:      #0F172A;
+    --color-secondary:    #475569;
+    --color-tertiary:     #0EA5A4;
+    --color-neutral:      #F8FAFC;
+    --color-surface:      #FFFFFF;
+    --color-border:       #CBD5E1;
+    --color-warning:      #EA580C;
+    --color-on-primary:   #FFFFFF;
+    --color-on-tertiary:  #042F2E;
+    --color-on-surface:   #111827;
+
+    --rounded-sm:   12px;
+    --rounded-md:   16px;
+    --rounded-lg:   24px;
+    --rounded-full: 999px;
+
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 16px;
+    --spacing-lg: 24px;
+    --spacing-xl: 32px;
+
+    --font-display: "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-text:    "SF Pro Text",    -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #1E293B;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-text);
+    padding: 40px 20px;
+  }
+
+  /* ── Phone Shell ───────────────────────────────────────────── */
+  .phone {
+    width: 390px;
+    height: 844px;
+    background: #000;
+    border-radius: 48px;
+    box-shadow:
+      0 0 0 10px #0F172A,
+      0 0 0 12px #334155,
+      0 32px 80px rgba(0,0,0,0.6);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+  }
+
+  /* ── Status Bar (dark) ─────────────────────────────────────── */
+  .status-bar {
+    height: 48px;
+    background: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px 0 24px;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 10;
+  }
+  .status-bar .time {
+    font-family: var(--font-text);
+    font-size: 15px;
+    font-weight: 600;
+    color: #fff;
+    letter-spacing: -0.01em;
+  }
+  .status-bar .notch {
+    position: absolute;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 120px; height: 34px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+  }
+  .status-icons { display: flex; align-items: center; gap: 6px; }
+
+  /* ── Top Controls ──────────────────────────────────────────── */
+  .scan-topbar {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm) var(--spacing-md) var(--spacing-md);
+  }
+  .ctrl-btn {
+    width: 40px; height: 40px;
+    border-radius: var(--rounded-full);
+    background: rgba(255,255,255,0.12);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: #fff;
+    transition: background 0.15s, transform 0.1s;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .ctrl-btn:hover  { background: rgba(255,255,255,0.22); }
+  .ctrl-btn:active { transform: scale(0.92); background: rgba(255,255,255,0.3); }
+  .ctrl-btn.active { background: rgba(255,220,0,0.25); color: #FFD600; }
+
+  .page-counter {
+    font-family: var(--font-text);
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.7);
+    letter-spacing: 0.04em;
+    background: rgba(0,0,0,0.4);
+    padding: 5px 12px;
+    border-radius: var(--rounded-full);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    user-select: none;
+  }
+  .page-counter span { color: #fff; }
+
+  /* ── Viewfinder ────────────────────────────────────────────── */
+  .viewfinder {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: crosshair;
+  }
+
+  /* Simulated camera feed */
+  .camera-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(160deg, #1a2535 0%, #0f1922 40%, #1c2b1e 100%);
+    transition: background 0.4s;
+  }
+  .camera-bg::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 3px,
+      rgba(255,255,255,0.013) 3px, rgba(255,255,255,0.013) 4px
+    );
+    pointer-events: none;
+  }
+  /* Simulated document on table */
+  .doc-on-table {
+    position: absolute;
+    width: 70%; aspect-ratio: 0.707;
+    background: linear-gradient(135deg, #f0ede5 0%, #e8e4d8 60%, #ddd9cc 100%);
+    border-radius: 2px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    transform: perspective(600px) rotateX(4deg) rotateZ(-1.5deg);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 16px 14px;
+    transition: transform 0.5s ease;
+  }
+  .doc-line {
+    height: 7px;
+    background: rgba(0,0,0,0.13);
+    border-radius: 3px;
+  }
+  .doc-line.short { width: 60%; }
+  .doc-line.medium { width: 80%; }
+  .doc-line.header { height: 12px; width: 55%; background: rgba(0,0,0,0.22); margin-bottom: 6px; }
+  .doc-line.gap { height: 14px; background: transparent; }
+
+  /* Dark overlay outside doc */
+  .vf-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: radial-gradient(ellipse 66% 78% at 50% 48%, transparent 0%, rgba(0,0,0,0.45) 100%);
+    transition: background 0.3s;
+  }
+  .vf-overlay.detected {
+    background: radial-gradient(ellipse 66% 78% at 50% 48%, transparent 0%, rgba(0,0,0,0.28) 100%);
+  }
+
+  /* Document detection box */
+  .doc-box {
+    position: absolute;
+    width: 72%; aspect-ratio: 0.707;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%) perspective(600px) rotateX(4deg) rotateZ(-1.5deg);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.35s;
+  }
+  .doc-box.visible { opacity: 1; }
+
+  /* Corner markers */
+  .corner {
+    position: absolute;
+    width: 22px; height: 22px;
+    border-color: var(--color-tertiary);
+    border-style: solid;
+    transition: border-color 0.3s;
+  }
+  .corner.tl { top: -2px;    left: -2px;   border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+  .corner.tr { top: -2px;    right: -2px;  border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+  .corner.bl { bottom: -2px; left: -2px;   border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+  .corner.br { bottom: -2px; right: -2px;  border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+
+  /* Edge lines */
+  .edge-h-top, .edge-h-bot, .edge-v-left, .edge-v-right {
+    position: absolute;
+    background: var(--color-tertiary);
+    opacity: 0.55;
+    transition: background 0.3s, opacity 0.3s;
+  }
+  .edge-h-top  { top: -1px;    left: 20px; right: 20px; height: 1.5px; }
+  .edge-h-bot  { bottom: -1px; left: 20px; right: 20px; height: 1.5px; }
+  .edge-v-left  { left: -1px;  top: 20px; bottom: 20px; width: 1.5px; }
+  .edge-v-right { right: -1px; top: 20px; bottom: 20px; width: 1.5px; }
+
+  .doc-box.locked .corner { border-color: #4ADE80; }
+  .doc-box.locked .edge-h-top,
+  .doc-box.locked .edge-h-bot,
+  .doc-box.locked .edge-v-left,
+  .doc-box.locked .edge-v-right { background: #4ADE80; opacity: 0.7; }
+
+  /* Scan line animation */
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--color-tertiary), transparent);
+    opacity: 0;
+    pointer-events: none;
+    top: 20%;
+  }
+  .scan-line.sweeping {
+    animation: sweep 1.4s ease-in-out infinite;
+    opacity: 1;
+  }
+  @keyframes sweep {
+    0%   { top: 15%; opacity: 0.7; }
+    50%  { top: 85%; opacity: 1; }
+    100% { top: 15%; opacity: 0.7; }
+  }
+
+  /* Capture flash */
+  .flash-overlay {
+    position: absolute;
+    inset: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 20;
+    transition: opacity 0.05s;
+  }
+  .flash-overlay.on { opacity: 0.9; }
+
+  /* Status pill inside viewfinder */
+  .vf-status {
+    position: absolute;
+    bottom: 20px; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0,0,0,0.55);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: var(--rounded-full);
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    letter-spacing: 0.02em;
+    transition: color 0.3s;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+  .vf-status.locked { color: #4ADE80; }
+  .vf-status.scanning { color: var(--color-tertiary); }
+
+  /* ── Bottom Controls ───────────────────────────────────────── */
+  .scan-bottom {
+    background: #0A0F1A;
+    padding: var(--spacing-md) var(--spacing-lg) 36px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    flex-shrink: 0;
+  }
+
+  /* Mode selector */
+  .mode-row {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-lg);
+  }
+  .mode-pill {
+    font-family: var(--font-text);
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: color 0.2s;
+    user-select: none;
+    padding: 4px 2px;
+    position: relative;
+  }
+  .mode-pill::after {
+    content: '';
+    position: absolute;
+    bottom: -2px; left: 50%;
+    transform: translateX(-50%) scaleX(0);
+    width: 20px; height: 2px;
+    background: var(--color-tertiary);
+    border-radius: 2px;
+    transition: transform 0.2s;
+  }
+  .mode-pill.active { color: #fff; }
+  .mode-pill.active::after { transform: translateX(-50%) scaleX(1); }
+
+  /* Capture row */
+  .capture-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 8px;
+  }
+
+  /* Thumbnail of last scan */
+  .thumb-btn {
+    width: 52px; height: 52px;
+    border-radius: var(--rounded-sm);
+    background: #1E293B;
+    border: 2px solid rgba(255,255,255,0.15);
+    overflow: hidden;
+    cursor: pointer;
+    transition: border-color 0.2s, transform 0.15s;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.25);
+    position: relative;
+  }
+  .thumb-btn:hover { border-color: rgba(255,255,255,0.35); }
+  .thumb-btn:active { transform: scale(0.93); }
+  .thumb-count {
+    position: absolute;
+    bottom: 3px; right: 3px;
+    background: var(--color-tertiary);
+    color: var(--color-on-tertiary);
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: var(--rounded-full);
+    line-height: 1.4;
+    display: none;
+  }
+  .thumb-count.visible { display: block; }
+
+  /* Shutter */
+  .shutter-wrap {
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .shutter-ring {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 3px solid rgba(255,255,255,0.35);
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.2s;
+  }
+  .shutter-ring.ready { border-color: var(--color-tertiary); }
+  .shutter-btn {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: #fff;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.1s, background 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+  .shutter-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: var(--color-tertiary);
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  .shutter-btn:hover::after { opacity: 0.15; }
+  .shutter-btn:active { transform: scale(0.88); }
+  .shutter-btn:active::after { opacity: 0.3; }
+
+  /* Rotate camera */
+  .rotate-btn {
+    width: 52px; height: 52px;
+    border-radius: var(--rounded-full);
+    background: rgba(255,255,255,0.08);
+    border: none;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: rgba(255,255,255,0.7);
+    transition: background 0.15s, transform 0.3s;
+    flex-shrink: 0;
+  }
+  .rotate-btn:hover { background: rgba(255,255,255,0.14); }
+  .rotate-btn:active { transform: rotate(180deg); }
+
+  /* ── Toast ─────────────────────────────────────────────────── */
+  #toast {
+    position: fixed;
+    bottom: 32px; left: 50%;
+    transform: translateX(-50%) translateY(60px);
+    background: var(--color-primary); color: #fff;
+    padding: 9px 20px;
+    border-radius: var(--rounded-full);
+    font-size: 13px; font-family: var(--font-text); font-weight: 600;
+    pointer-events: none; opacity: 0;
+    transition: opacity 0.2s, transform 0.2s;
+    white-space: nowrap; z-index: 999;
+  }
+
+  /* ── Captured doc strip ────────────────────────────────────── */
+  .captured-strip {
+    position: absolute;
+    bottom: 220px; left: 0; right: 0;
+    padding: 0 var(--spacing-md);
+    pointer-events: none;
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: flex-end;
+    z-index: 5;
+  }
+  .captured-thumb {
+    width: 44px; height: 56px;
+    background: linear-gradient(135deg, #f0ede5, #ddd9cc);
+    border-radius: 6px;
+    border: 2px solid rgba(255,255,255,0.4);
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    transform: translateY(20px);
+    opacity: 0;
+    transition: transform 0.35s, opacity 0.35s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .captured-thumb.in {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  .check-mark {
+    width: 16px; height: 16px;
+    background: var(--color-tertiary);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+
+  <!-- Flash overlay -->
+  <div class="flash-overlay" id="flashOverlay"></div>
+
+  <!-- Status Bar -->
+  <div class="status-bar">
+    <span class="time">9:41</span>
+    <div class="notch"></div>
+    <div class="status-icons">
+      <svg width="17" height="12" viewBox="0 0 17 12" fill="none">
+        <rect x="0"  y="7" width="3" height="5" rx="1" fill="white"/>
+        <rect x="4"  y="5" width="3" height="7" rx="1" fill="white"/>
+        <rect x="8"  y="3" width="3" height="9" rx="1" fill="white"/>
+        <rect x="12" y="0" width="3" height="12" rx="1" fill="white"/>
+      </svg>
+      <svg width="16" height="12" viewBox="0 0 16 12" fill="none">
+        <path d="M8 10a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3z" fill="white"/>
+        <path d="M3.5 7C5 5.3 6.4 4.5 8 4.5s3 .8 4.5 2.5" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+        <path d="M1 4C3.2 1.7 5.5 0.5 8 0.5s4.8 1.2 7 3.5" stroke="white" stroke-width="1.5" stroke-linecap="round" fill="none"/>
+      </svg>
+      <svg width="25" height="12" viewBox="0 0 25 12" fill="none">
+        <rect x="0.5" y="0.5" width="21" height="11" rx="3.5" stroke="white" stroke-opacity="0.5"/>
+        <rect x="2" y="2" width="15" height="8" rx="2" fill="white"/>
+        <path d="M23 4v4a2 2 0 0 0 0-4z" fill="white" fill-opacity="0.5"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Top Controls -->
+  <div class="scan-topbar">
+    <button class="ctrl-btn" id="cancelBtn" onclick="showToast('Scan cancelled')" title="Cancel">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </button>
+
+    <div class="page-counter" id="pageCounter">Pages: <span id="pageNum">0</span></div>
+
+    <button class="ctrl-btn" id="flashBtn" onclick="toggleFlash()" title="Toggle flash">
+      <svg id="flashIcon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+        <path d="M11 2L5 11h6l-2 7 8-10h-6l2-6z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- Viewfinder -->
+  <div class="viewfinder" id="viewfinder">
+    <!-- Camera BG -->
+    <div class="camera-bg" id="cameraBg"></div>
+
+    <!-- Simulated document -->
+    <div class="doc-on-table" id="docOnTable">
+      <div class="doc-line header"></div>
+      <div class="doc-line medium"></div>
+      <div class="doc-line short"></div>
+      <div class="doc-line medium"></div>
+      <div class="doc-line gap"></div>
+      <div class="doc-line medium"></div>
+      <div class="doc-line short"></div>
+      <div class="doc-line medium"></div>
+      <div class="doc-line medium"></div>
+      <div class="doc-line short"></div>
+      <div class="doc-line gap"></div>
+      <div class="doc-line medium"></div>
+      <div class="doc-line short"></div>
+    </div>
+
+    <!-- Vignette overlay -->
+    <div class="vf-overlay" id="vfOverlay"></div>
+
+    <!-- Detection box with corners -->
+    <div class="doc-box" id="docBox">
+      <div class="corner tl"></div>
+      <div class="corner tr"></div>
+      <div class="corner bl"></div>
+      <div class="corner br"></div>
+      <div class="edge-h-top"></div>
+      <div class="edge-h-bot"></div>
+      <div class="edge-v-left"></div>
+      <div class="edge-v-right"></div>
+    </div>
+
+    <!-- Scan sweep line -->
+    <div class="scan-line" id="scanLine"></div>
+
+    <!-- Status pill -->
+    <div class="vf-status" id="vfStatus">Point at a document</div>
+
+    <!-- Captured thumbnail strip -->
+    <div class="captured-strip" id="capturedStrip"></div>
+  </div>
+
+  <!-- Bottom Controls -->
+  <div class="scan-bottom">
+
+    <!-- Mode selector -->
+    <div class="mode-row">
+      <span class="mode-pill" onclick="setMode(this)">Single</span>
+      <span class="mode-pill active" onclick="setMode(this)">Auto</span>
+      <span class="mode-pill" onclick="setMode(this)">Batch</span>
+    </div>
+
+    <!-- Capture row -->
+    <div class="capture-row">
+
+      <!-- Last scan thumb -->
+      <div class="thumb-btn" id="thumbBtn" onclick="showToast('Opening scanned pages…')">
+        <svg id="thumbIcon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+          <rect x="4" y="3" width="13" height="17" rx="2" stroke="currentColor" stroke-width="1.6"/>
+          <path d="M8 8h7M8 12h7M8 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span class="thumb-count" id="thumbCount">0</span>
+      </div>
+
+      <!-- Shutter -->
+      <div class="shutter-wrap">
+        <div class="shutter-ring" id="shutterRing">
+          <button class="shutter-btn" id="shutterBtn" onclick="capture()" title="Capture"></button>
+        </div>
+      </div>
+
+      <!-- Rotate camera -->
+      <button class="rotate-btn" onclick="showToast('Switching camera…')" title="Flip camera">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M4 11a7 7 0 0 1 12.4-4.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M18 11a7 7 0 0 1-12.4 4.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          <path d="M14.5 6l2.2-.4-.4-2.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M7.5 16l-2.2.4.4 2.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<div id="toast"></div>
+
+<script>
+  /* ── State ─────────────────────────────────────────── */
+  let detectionPhase = 0; // 0=searching, 1=detected, 2=locked
+  let pageCount = 0;
+  let flashOn = false;
+  let scanTimer, lockTimer, detectionLoop;
+
+  /* ── Boot detection cycle ──────────────────────────── */
+  function startDetection() {
+    detectionPhase = 0;
+    setStatus('point');
+    detectionLoop = setTimeout(onDetected, 1600);
+  }
+
+  function onDetected() {
+    detectionPhase = 1;
+    document.getElementById('docBox').classList.add('visible');
+    document.getElementById('vfOverlay').classList.add('detected');
+    document.getElementById('scanLine').classList.add('sweeping');
+    setStatus('scanning');
+    lockTimer = setTimeout(onLocked, 1200);
+  }
+
+  function onLocked() {
+    detectionPhase = 2;
+    document.getElementById('docBox').classList.add('locked');
+    document.getElementById('shutterRing').classList.add('ready');
+    document.getElementById('scanLine').classList.remove('sweeping');
+    setStatus('locked');
+  }
+
+  function resetDetection() {
+    clearTimeout(detectionLoop);
+    clearTimeout(lockTimer);
+    document.getElementById('docBox').classList.remove('visible', 'locked');
+    document.getElementById('vfOverlay').classList.remove('detected');
+    document.getElementById('scanLine').classList.remove('sweeping');
+    document.getElementById('shutterRing').classList.remove('ready');
+  }
+
+  function setStatus(state) {
+    const el = document.getElementById('vfStatus');
+    el.className = 'vf-status';
+    if (state === 'point')    { el.textContent = 'Point at a document'; }
+    if (state === 'scanning') { el.classList.add('scanning'); el.textContent = 'Detecting edges…'; }
+    if (state === 'locked')   { el.classList.add('locked'); el.textContent = '✓ Ready to scan'; }
+  }
+
+  /* ── Capture ───────────────────────────────────────── */
+  function capture() {
+    // Flash
+    const fl = document.getElementById('flashOverlay');
+    fl.classList.add('on');
+    setTimeout(() => fl.classList.remove('on'), 120);
+
+    pageCount++;
+
+    // Update counter
+    document.getElementById('pageNum').textContent = pageCount;
+
+    // Update thumb count badge
+    const badge = document.getElementById('thumbCount');
+    badge.textContent = pageCount;
+    badge.classList.add('visible');
+
+    // Add thumbnail to strip
+    addThumb();
+
+    // Reset and restart detection
+    resetDetection();
+    setStatus('point');
+    setTimeout(startDetection, 500);
+  }
+
+  function addThumb() {
+    const strip = document.getElementById('capturedStrip');
+    if (strip.children.length >= 4) strip.removeChild(strip.firstChild);
+
+    const t = document.createElement('div');
+    t.className = 'captured-thumb';
+    t.innerHTML = `
+      <div class="check-mark">
+        <svg width="9" height="9" viewBox="0 0 9 9" fill="none">
+          <path d="M1.5 4.5l2.5 2.5 3.5-4" stroke="white" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>`;
+    strip.appendChild(t);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => t.classList.add('in'));
+    });
+  }
+
+  /* ── Flash toggle ──────────────────────────────────── */
+  function toggleFlash() {
+    flashOn = !flashOn;
+    const btn = document.getElementById('flashBtn');
+    btn.classList.toggle('active', flashOn);
+    document.getElementById('flashIcon').style.fill = flashOn ? '#FFD600' : 'none';
+    showToast(flashOn ? 'Flash on' : 'Flash off');
+  }
+
+  /* ── Mode switch ───────────────────────────────────── */
+  function setMode(el) {
+    document.querySelectorAll('.mode-pill').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    showToast('Mode: ' + el.textContent);
+  }
+
+  /* ── Toast ─────────────────────────────────────────── */
+  let toastTimer;
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.opacity = '1';
+    t.style.transform = 'translateX(-50%) translateY(0)';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      t.style.opacity = '0';
+      t.style.transform = 'translateX(-50%) translateY(60px)';
+    }, 1800);
+  }
+
+  /* ── Init ──────────────────────────────────────────── */
+  startDetection();
+</script>
+</body>
+</html>

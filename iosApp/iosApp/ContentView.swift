@@ -64,6 +64,42 @@ struct ContentView: View {
                             Spacer()
                         }
 
+                        // Processing banner — visible while OCR/classification runs
+                        if viewModel.isProcessing {
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                    .tint(NexarColor.accentPrimary)
+                                Text("Processing scan…")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(NexarColor.foregroundSecondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(NexarColor.surfaceSecondary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .stroke(NexarColor.accentPrimary.opacity(0.3), lineWidth: 1)
+                            )
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+
+                        // Batch export banner
+                        if viewModel.isBatchExporting {
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                    .tint(NexarColor.accentPrimary)
+                                Text("Exporting all documents…")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundStyle(NexarColor.foregroundSecondary)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(NexarColor.surfaceSecondary, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .transition(.opacity.combined(with: .move(edge: .top)))
+                        }
+
                         VStack(spacing: 12) {
                             HStack {
                                 Text("Recent scans")
@@ -85,6 +121,7 @@ struct ContentView: View {
                                     NexarDocumentRow(
                                         document: document,
                                         canExport: viewModel.storageFolderName != nil,
+                                        isExporting: viewModel.exportingDocumentId == document.id,
                                         onPreview: { viewModel.openPreview(for: document) },
                                         onExport: {
                                             if viewModel.storageFolderName != nil {
@@ -100,9 +137,7 @@ struct ContentView: View {
                                         },
                                         onStar: { viewModel.toggleStar(document) },
                                         onOcrView: { ocrSheetDocument = document },
-                                        onShare: {
-                                            shareDocument(document)
-                                        },
+                                        onShare: { shareDocument(document) },
                                         onDetail: { detailDocument = document }
                                     )
                                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -142,24 +177,39 @@ struct ContentView: View {
                     .padding(.horizontal, 28)
                     .padding(.bottom, 140)
                 }
+                .animation(.easeInOut(duration: 0.25), value: viewModel.isProcessing)
+                .animation(.easeInOut(duration: 0.25), value: viewModel.isBatchExporting)
 
+                // Floating scan button
                 VStack {
                     Spacer()
                     Button {
-                        startScanning()
+                        if !viewModel.isProcessing { startScanning() }
                     } label: {
                         HStack(spacing: 10) {
-                            Image(systemName: "viewfinder")
-                                .font(.system(size: 22, weight: .semibold))
-                            Text("Scan document")
-                                .font(.system(size: 18, weight: .bold))
+                            if viewModel.isProcessing {
+                                ProgressView()
+                                    .tint(NexarColor.onAccent)
+                                    .scaleEffect(0.9)
+                                Text("Processing…")
+                                    .font(.system(size: 18, weight: .bold))
+                            } else {
+                                Image(systemName: "viewfinder")
+                                    .font(.system(size: 22, weight: .semibold))
+                                Text("Scan document")
+                                    .font(.system(size: 18, weight: .bold))
+                            }
                         }
                         .frame(maxWidth: .infinity)
                         .frame(height: 64)
-                        .background(NexarColor.accentPrimary, in: RoundedRectangle(cornerRadius: 32, style: .continuous))
+                        .background(
+                            NexarColor.accentPrimary.opacity(viewModel.isProcessing ? 0.7 : 1.0),
+                            in: RoundedRectangle(cornerRadius: 32, style: .continuous)
+                        )
                         .foregroundStyle(NexarColor.onAccent)
                         .shadow(color: Color(hex: "0F172A").opacity(0.20), radius: 20, x: 0, y: 8)
                     }
+                    .disabled(viewModel.isProcessing)
                     .padding(.horizontal, 28)
                     .padding(.bottom, 34)
                 }
@@ -203,18 +253,25 @@ struct ContentView: View {
                                         .fill(NexarColor.surfaceSecondary)
                                         .frame(width: 40, height: 40)
                                         .overlay(Circle().stroke(NexarColor.borderSubtle, lineWidth: 1))
-                                    Image(systemName: "icloud.and.arrow.up")
-                                        .font(.system(size: 15, weight: .medium))
-                                        .foregroundStyle(NexarColor.accentPrimary)
-                                        .frame(width: 40, height: 40)
-                                    Text("\(viewModel.needsExportCount)")
-                                        .font(.system(size: 9, weight: .bold))
-                                        .foregroundStyle(.white)
-                                        .padding(3)
-                                        .background(NexarColor.warning, in: Circle())
-                                        .offset(x: 2, y: -2)
+                                    if viewModel.isBatchExporting {
+                                        ProgressView()
+                                            .tint(NexarColor.accentPrimary)
+                                            .frame(width: 40, height: 40)
+                                    } else {
+                                        Image(systemName: "icloud.and.arrow.up")
+                                            .font(.system(size: 15, weight: .medium))
+                                            .foregroundStyle(NexarColor.accentPrimary)
+                                            .frame(width: 40, height: 40)
+                                        Text("\(viewModel.needsExportCount)")
+                                            .font(.system(size: 9, weight: .bold))
+                                            .foregroundStyle(.white)
+                                            .padding(3)
+                                            .background(NexarColor.warning, in: Circle())
+                                            .offset(x: 2, y: -2)
+                                    }
                                 }
                             }
+                            .disabled(viewModel.isBatchExporting)
                         }
 
                         Button {
@@ -241,7 +298,11 @@ struct ContentView: View {
                     showsScanner = false
                     viewModel.handleScannedImages(images)
                 },
-                onCancel: { showsScanner = false }
+                onCancel: { showsScanner = false },
+                onError: { nexarError in
+                    showsScanner = false
+                    viewModel.error = nexarError
+                }
             )
             .ignoresSafeArea()
         }
@@ -267,8 +328,8 @@ struct ContentView: View {
         ) { result in
             if case let .success(urls) = result, let url = urls.first {
                 viewModel.selectStorageFolder(url)
-            } else if case let .failure(error) = result {
-                viewModel.errorMessage = error.localizedDescription
+            } else if case let .failure(importError) = result {
+                viewModel.error = .exportFailed(importError.localizedDescription)
             }
         }
         .alert("Create Folder", isPresented: $showsCreateFolderAlert) {
@@ -307,16 +368,29 @@ struct ContentView: View {
                      (result.failed > 0 ? ", \(result.failed) failed." : "."))
             }
         }
+        // Typed error alert — replaces the previous generic "Error" alert
         .alert(
-            "Error",
+            viewModel.error?.alertTitle ?? "Error",
             isPresented: Binding(
-                get: { viewModel.errorMessage != nil },
-                set: { if !$0 { viewModel.errorMessage = nil } }
+                get: { viewModel.error != nil },
+                set: { if !$0 { viewModel.dismissError() } }
             )
         ) {
-            Button("OK", role: .cancel) { viewModel.errorMessage = nil }
+            Button("OK", role: .cancel) { viewModel.dismissError() }
+            if viewModel.error?.hasRecoverySuggestion == true {
+                Button("Configure Storage") {
+                    viewModel.dismissError()
+                    showsFolderImporter = true
+                }
+            }
         } message: {
-            Text(viewModel.errorMessage ?? "")
+            if let err = viewModel.error {
+                Text(err.errorDescription ?? "An unexpected error occurred.")
+                if let suggestion = err.recoverySuggestion {
+                    Text(suggestion)
+                        .font(.footnote)
+                }
+            }
         }
     }
 

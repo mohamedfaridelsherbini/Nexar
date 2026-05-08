@@ -2,6 +2,8 @@ import Foundation
 import SwiftUI
 import UIKit
 
+// MARK: - Supporting types
+
 struct PreviewItem: Identifiable {
     let id = UUID()
     let url: URL
@@ -49,23 +51,60 @@ enum DocumentSortOrder: String, CaseIterable {
     case category = "Category"
 }
 
+// MARK: - DashboardViewModel
+
 @MainActor
 final class DashboardViewModel: ObservableObject {
+
+    // MARK: Document list
+
     @Published private(set) var documents: [ScannedDocument] = []
     @Published private(set) var storageFolderName: String?
+
+    // MARK: UI preferences
+
     @Published var searchText = ""
     @Published var activeFilter: DocumentListFilter = .all
     @Published var sortOrder: DocumentSortOrder = .newest
     @Published var previewItem: PreviewItem?
-    @Published var errorMessage: String?
+
+    // MARK: Loading states (mirrors KMP DashboardUiState)
+
+    /// True while a new scan is being processed (OCR + classification in flight).
+    @Published private(set) var isProcessing = false
+    /// Set to the document ID while a single-document export is running.
+    @Published private(set) var exportingDocumentId: String? = nil
+    /// True while a batch export is in progress.
+    @Published private(set) var isBatchExporting = false
+
+    // MARK: Error state (typed, mirrors NexarError.kt)
+
+    @Published var error: NexarError? = nil
+
+    // MARK: Batch export result
+
     @Published var batchExportResult: (success: Int, failed: Int)? = nil
 
-    private let store: DocumentStore
+    // MARK: Dependencies
 
-    init(store: DocumentStore = DocumentStore()) {
-        self.store = store
+    private let repository: DocumentRepository
+    private let processDocument: ProcessDocumentUseCase
+
+    // MARK: Init
+
+    /// Convenience initialiser: creates a `DocumentStore` + `ProcessDocumentUseCase` automatically.
+    convenience init() {
+        let store = DocumentStore()
+        self.init(repository: store)
+    }
+
+    init(repository: DocumentRepository, processDocument: ProcessDocumentUseCase? = nil) {
+        self.repository = repository
+        self.processDocument = processDocument ?? ProcessDocumentUseCase(repository: repository)
         Task { await refresh() }
     }
+
+    // MARK: - Computed
 
     var needsExportCount: Int {
         documents.filter { !$0.isExportedToStorage }.count
@@ -83,45 +122,41 @@ final class DashboardViewModel: ObservableObject {
         case .starred:
             byFilter = documents.filter { $0.isStarred }
         default:
-            if let cat = activeFilter.category {
-                byFilter = documents.filter { $0.category == cat }
-            } else {
-                byFilter = documents
-            }
+            byFilter = activeFilter.category.map { cat in documents.filter { $0.category == cat } }
+                ?? documents
         }
 
-        let filtered: [ScannedDocument]
-        if query.isEmpty {
-            filtered = byFilter
-        } else {
-            filtered = byFilter.filter { doc in
-                doc.name.lowercased().contains(query) ||
-                doc.ocrText.lowercased().contains(query) ||
-                doc.category.rawValue.lowercased().contains(query) ||
-                doc.tags.contains { $0.lowercased().contains(query) }
-            }
-        }
+        guard !query.isEmpty else { return byFilter.sorted(by: sortOrder) }
 
-        return filtered.sorted(by: sortOrder)
+        return byFilter.filter { doc in
+            doc.name.lowercased().contains(query) ||
+            doc.ocrText.lowercased().contains(query) ||
+            doc.category.rawValue.lowercased().contains(query) ||
+            doc.tags.contains { $0.lowercased().contains(query) }
+        }.sorted(by: sortOrder)
     }
+
+    // MARK: - Actions
 
     func refresh() async {
         do {
-            documents = try await store.loadDocuments()
-            storageFolderName = await store.storageFolderName()
+            documents = try await repository.loadDocuments()
+            storageFolderName = await repository.storageFolderName()
         } catch {
-            errorMessage = error.localizedDescription
+            self.error = .ocrFailed("loading documents")
         }
     }
 
     func handleScannedImages(_ images: [UIImage]) {
+        isProcessing = true
         Task {
+            defer { isProcessing = false }
             do {
-                let document = try await store.addDocumentScan(images: images)
+                let document = try await processDocument.execute(images: images)
                 documents.insert(document, at: 0)
                 triggerSuccessHaptic()
             } catch {
-                errorMessage = error.localizedDescription
+                self.error = .ocrFailed("new scan")
             }
         }
     }
@@ -129,15 +164,14 @@ final class DashboardViewModel: ObservableObject {
     func renameDocument(_ document: ScannedDocument, to newName: String) {
         let trimmed = newName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-
         Task {
             do {
-                try await store.renameDocument(id: document.id, to: trimmed)
+                try await repository.renameDocument(id: document.id, to: trimmed)
                 if let index = documents.firstIndex(where: { $0.id == document.id }) {
                     documents[index].name = trimmed
                 }
             } catch {
-                errorMessage = error.localizedDescription
+                self.error = .ocrFailed(document.name)
             }
         }
     }
@@ -145,28 +179,23 @@ final class DashboardViewModel: ObservableObject {
     func deleteDocument(_ document: ScannedDocument) {
         Task {
             do {
-                try await store.deleteDocument(document)
+                try await repository.deleteDocument(document)
                 documents.removeAll { $0.id == document.id }
             } catch {
-                errorMessage = error.localizedDescription
+                self.error = .ocrFailed(document.name)
             }
         }
-    }
-
-    func deleteDocuments(at offsets: IndexSet) {
-        let items = offsets.map { filteredDocuments[$0] }
-        for item in items { deleteDocument(item) }
     }
 
     func toggleStar(_ document: ScannedDocument) {
         Task {
             do {
-                try await store.toggleStar(document)
+                try await repository.toggleStar(document)
                 if let index = documents.firstIndex(where: { $0.id == document.id }) {
                     documents[index].isStarred.toggle()
                 }
             } catch {
-                errorMessage = error.localizedDescription
+                self.error = .ocrFailed(document.name)
             }
         }
     }
@@ -174,9 +203,9 @@ final class DashboardViewModel: ObservableObject {
     func selectStorageFolder(_ url: URL) {
         Task {
             do {
-                storageFolderName = try await store.setStorageFolder(url)
+                storageFolderName = try await repository.setStorageFolder(url)
             } catch {
-                errorMessage = error.localizedDescription
+                self.error = .folderCreationFailed
             }
         }
     }
@@ -185,22 +214,26 @@ final class DashboardViewModel: ObservableObject {
         let trimmed = folderName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         Task {
-            do { try await store.createFolder(named: trimmed) } catch {
-                errorMessage = error.localizedDescription
+            do {
+                try await repository.createFolder(named: trimmed)
+            } catch {
+                self.error = .folderCreationFailed
             }
         }
     }
 
     func exportDocument(_ document: ScannedDocument) {
+        exportingDocumentId = document.id
         Task {
+            defer { exportingDocumentId = nil }
             do {
-                try await store.exportDocument(document)
+                try await repository.exportDocument(document)
                 if let index = documents.firstIndex(where: { $0.id == document.id }) {
                     documents[index].isExportedToStorage = true
                 }
                 triggerSuccessHaptic()
             } catch {
-                errorMessage = error.localizedDescription
+                self.error = .exportFailed(document.name)
             }
         }
     }
@@ -208,12 +241,14 @@ final class DashboardViewModel: ObservableObject {
     func batchExport() {
         let unexported = documents.filter { !$0.isExportedToStorage }
         guard !unexported.isEmpty else { return }
+        isBatchExporting = true
         Task {
+            defer { isBatchExporting = false }
             var success = 0
             var failed = 0
             for doc in unexported {
                 do {
-                    try await store.exportDocument(doc)
+                    try await repository.exportDocument(doc)
                     if let index = documents.firstIndex(where: { $0.id == doc.id }) {
                         documents[index].isExportedToStorage = true
                     }
@@ -230,26 +265,32 @@ final class DashboardViewModel: ObservableObject {
     func updateDocument(_ document: ScannedDocument) {
         Task {
             do {
-                try await store.updateDocument(document)
+                try await repository.updateDocument(document)
                 if let index = documents.firstIndex(where: { $0.id == document.id }) {
                     documents[index] = document
                 }
             } catch {
-                errorMessage = error.localizedDescription
+                self.error = .ocrFailed(document.name)
             }
         }
     }
 
     func openPreview(for document: ScannedDocument) {
         Task {
-            if let url = await store.previewURL(for: document) {
+            if let url = await repository.previewURL(for: document) {
                 previewItem = PreviewItem(url: url)
             } else {
-                errorMessage = DocumentStoreError.previewUnavailable.localizedDescription
+                self.error = .previewUnavailable
             }
         }
     }
+
+    func dismissError() {
+        error = nil
+    }
 }
+
+// MARK: - Helpers
 
 private extension Array where Element == ScannedDocument {
     func sorted(by order: DocumentSortOrder) -> [ScannedDocument] {
@@ -262,7 +303,6 @@ private extension Array where Element == ScannedDocument {
     }
 }
 
-// MARK: - Haptics
 private func triggerSuccessHaptic() {
     let generator = UINotificationFeedbackGenerator()
     generator.prepare()

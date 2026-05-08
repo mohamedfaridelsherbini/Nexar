@@ -173,6 +173,7 @@ struct NexarLocalStatusCard: View {
 struct NexarDocumentRow: View {
     let document: ScannedDocument
     let canExport: Bool
+    var isExporting: Bool = false
     let onPreview: () -> Void
     let onExport: () -> Void
     let onRename: () -> Void
@@ -182,10 +183,12 @@ struct NexarDocumentRow: View {
     var onDetail: (() -> Void)? = nil
 
     private var statusLabel: String {
-        document.isExportedToStorage ? "Exported" : "Ready to export"
+        if isExporting { return "Exporting…" }
+        return document.isExportedToStorage ? "Exported" : "Ready to export"
     }
     private var statusColor: Color {
-        document.isExportedToStorage ? NexarColor.success : NexarColor.accentPrimary
+        if isExporting { return NexarColor.accentPrimary }
+        return document.isExportedToStorage ? NexarColor.success : NexarColor.accentPrimary
     }
 
     var body: some View {
@@ -253,8 +256,14 @@ struct NexarDocumentRow: View {
                     SmallActionButton(icon: "eye", onClick: onPreview)
                     SmallActionButton(icon: "pencil", onClick: onRename)
                     if canExport {
-                        SmallActionButton(icon: document.isExportedToStorage ? "checkmark.circle" : "icloud.and.arrow.up",
-                                          isAccent: true, onClick: onExport)
+                        if isExporting {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                                .frame(width: 30, height: 28)
+                        } else {
+                            SmallActionButton(icon: document.isExportedToStorage ? "checkmark.circle" : "icloud.and.arrow.up",
+                                              isAccent: true, onClick: onExport)
+                        }
                     }
                     if let onOcrView, document.ocrProcessed && !document.ocrText.isEmpty {
                         SmallActionButton(icon: "text.viewfinder", onClick: onOcrView)

@@ -1,6 +1,5 @@
 import Foundation
 import UIKit
-import Vision
 
 enum DocumentStoreError: LocalizedError {
     case emptyScan
@@ -10,32 +9,32 @@ enum DocumentStoreError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .emptyScan:               return "No scanned pages were returned."
-        case .storageNotConfigured:    return "Choose a storage folder before exporting documents."
+        case .emptyScan:                  return "No scanned pages were returned."
+        case .storageNotConfigured:       return "Choose a storage folder before exporting documents."
         case .securityScopedAccessDenied: return "The selected folder could not be accessed."
-        case .previewUnavailable:      return "A preview file could not be prepared for this document."
+        case .previewUnavailable:         return "A preview file could not be prepared for this document."
         }
     }
 }
 
-actor DocumentStore {
+/// Concrete `DocumentRepository` implementation.
+///
+/// Responsibilities (data layer only — no OCR or classification):
+///   - JSON document index in Application Support/Nexar/
+///   - Page image files  (`images/{id}/page_*.jpg`)
+///   - PDF files         (`pdfs/{id}.pdf`)
+///   - Security-scoped bookmark for the user-selected export folder
+///   - Export copy to the selected storage folder
+actor DocumentStore: DocumentRepository {
+
     private let fileManager = FileManager.default
     private let defaults = UserDefaults.standard
     private let bookmarkKey = "nexar.storage.bookmark"
     private let indexFileName = "documents.json"
 
-    func loadDocuments() throws -> [ScannedDocument] {
-        try ensureDirectories()
-        let indexURL = baseDirectory.appendingPathComponent(indexFileName)
-        guard fileManager.fileExists(atPath: indexURL.path) else { return [] }
-        let data = try Data(contentsOf: indexURL)
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return try decoder.decode([ScannedDocument].self, from: data)
-            .sorted { $0.createdAt > $1.createdAt }
-    }
+    // MARK: - DocumentRepository: file preparation
 
-    func addDocumentScan(images: [UIImage]) async throws -> ScannedDocument {
+    func createDocumentFiles(from images: [UIImage]) async throws -> (stub: ScannedDocument, pageURLs: [URL]) {
         guard !images.isEmpty else { throw DocumentStoreError.emptyScan }
         try ensureDirectories()
 
@@ -60,73 +59,64 @@ actor DocumentStore {
         let pdfURL = pdfsDirectory.appendingPathComponent(pdfFileName)
         try createPDF(from: images, at: pdfURL)
 
-        // Run OCR and classification
-        let ocrText = await extractOcrText(from: pageURLs)
-        let (category, tags) = DocumentClassifier.classify(ocrText)
-        let suggestedName = DocumentNamer.suggest(ocrText: ocrText, category: category, date: createdAt)
-
-        var document = ScannedDocument(
+        let stub = ScannedDocument(
             id: documentId,
-            name: suggestedName ?? Self.defaultDocumentName(from: createdAt),
+            name: Self.defaultDocumentName(from: createdAt),
             createdAt: createdAt,
             pageFileNames: pageFileNames,
             pdfFileName: pdfFileName
         )
-        document.ocrText = ocrText
-        document.category = category
-        document.tags = tags
-        document.ocrProcessed = true
-
-        // Extract additional intelligence
-        let extractedAmount = DocumentExtractor.extractAmount(from: ocrText)
-        let extractedDate = DocumentExtractor.extractDate(from: ocrText)
-        document.extractedAmount = extractedAmount
-        document.extractedDate = extractedDate
-
-        var documents = try loadDocuments()
-
-        // Duplicate detection via Jaccard similarity
-        let duplicateId = DuplicateDetector.findDuplicate(newDoc: document, in: documents)
-        document.duplicateOfId = duplicateId
-
-        documents.insert(document, at: 0)
-        try saveDocuments(documents)
-
-        // Index in Spotlight
-        SpotlightIndexer.shared.index(document)
-
-        // Update widget shared data
-        WidgetDataProvider.update(unexportedCount: documents.filter { !$0.isExportedToStorage }.count,
-                                   lastScanName: document.name)
-
-        return document
+        return (stub: stub, pageURLs: pageURLs)
     }
 
-    func renameDocument(id: String, to newName: String) throws {
-        var documents = try loadDocuments()
+    func saveDocument(_ document: ScannedDocument) async throws {
+        var docs = try await loadDocuments()
+        if let index = docs.firstIndex(where: { $0.id == document.id }) {
+            docs[index] = document
+        } else {
+            docs.insert(document, at: 0)
+        }
+        try saveDocuments(docs)
+    }
+
+    // MARK: - DocumentRepository: CRUD
+
+    func loadDocuments() async throws -> [ScannedDocument] {
+        try ensureDirectories()
+        let indexURL = baseDirectory.appendingPathComponent(indexFileName)
+        guard fileManager.fileExists(atPath: indexURL.path) else { return [] }
+        let data = try Data(contentsOf: indexURL)
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return try decoder.decode([ScannedDocument].self, from: data)
+            .sorted { $0.createdAt > $1.createdAt }
+    }
+
+    func renameDocument(id: String, to newName: String) async throws {
+        var documents = try await loadDocuments()
         guard let index = documents.firstIndex(where: { $0.id == id }) else { return }
         documents[index].name = newName
         try saveDocuments(documents)
         SpotlightIndexer.shared.index(documents[index])
     }
 
-    func toggleStar(_ document: ScannedDocument) throws {
-        var documents = try loadDocuments()
+    func toggleStar(_ document: ScannedDocument) async throws {
+        var documents = try await loadDocuments()
         guard let index = documents.firstIndex(where: { $0.id == document.id }) else { return }
         documents[index].isStarred.toggle()
         try saveDocuments(documents)
     }
 
-    func updateDocument(_ document: ScannedDocument) throws {
-        var documents = try loadDocuments()
+    func updateDocument(_ document: ScannedDocument) async throws {
+        var documents = try await loadDocuments()
         guard let index = documents.firstIndex(where: { $0.id == document.id }) else { return }
         documents[index] = document
         try saveDocuments(documents)
         SpotlightIndexer.shared.index(document)
     }
 
-    func deleteDocument(_ document: ScannedDocument) throws {
-        var documents = try loadDocuments()
+    func deleteDocument(_ document: ScannedDocument) async throws {
+        var documents = try await loadDocuments()
         documents.removeAll { $0.id == document.id }
         try saveDocuments(documents)
         SpotlightIndexer.shared.deindex(document.id)
@@ -142,28 +132,29 @@ actor DocumentStore {
         }
     }
 
-    func setStorageFolder(_ url: URL) throws -> String {
+    // MARK: - DocumentRepository: export
+
+    func setStorageFolder(_ url: URL) async throws -> String {
         let bookmark = try url.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil)
         defaults.set(bookmark, forKey: bookmarkKey)
         return url.lastPathComponent
     }
 
-    func storageFolderName() -> String? {
+    func storageFolderName() async -> String? {
         (try? resolveStorageFolderURL())?.lastPathComponent
     }
 
-    func createFolder(named folderName: String) throws {
+    func createFolder(named folderName: String) async throws {
         let folderURL = try storageFolderURL()
         guard folderURL.startAccessingSecurityScopedResource() else {
             throw DocumentStoreError.securityScopedAccessDenied
         }
         defer { folderURL.stopAccessingSecurityScopedResource() }
-
         let targetURL = folderURL.appendingPathComponent(folderName, isDirectory: true)
         try fileManager.createDirectory(at: targetURL, withIntermediateDirectories: true)
     }
 
-    func exportDocument(_ document: ScannedDocument) throws {
+    func exportDocument(_ document: ScannedDocument) async throws {
         let folderURL = try storageFolderURL()
         let pdfURL = pdfsDirectory.appendingPathComponent(document.pdfFileName)
 
@@ -172,11 +163,9 @@ actor DocumentStore {
         }
         defer { folderURL.stopAccessingSecurityScopedResource() }
 
-        // Category/year folder structure
         let year = Calendar.current.component(.year, from: document.createdAt)
         let categoryFolder = folderURL.appendingPathComponent(document.category.folderName, isDirectory: true)
         let yearFolder = categoryFolder.appendingPathComponent(String(year), isDirectory: true)
-
         try fileManager.createDirectory(at: yearFolder, withIntermediateDirectories: true)
 
         let destinationURL = yearFolder.appendingPathComponent(exportFileName(for: document))
@@ -185,17 +174,19 @@ actor DocumentStore {
         }
         try fileManager.copyItem(at: pdfURL, to: destinationURL)
 
-        var documents = try loadDocuments()
+        var documents = try await loadDocuments()
         if let index = documents.firstIndex(where: { $0.id == document.id }) {
             documents[index].isExportedToStorage = true
             try saveDocuments(documents)
             let unexportedCount = documents.filter { !$0.isExportedToStorage }.count
             WidgetDataProvider.update(unexportedCount: unexportedCount,
-                                       lastScanName: documents[index].name)
+                                      lastScanName: documents[index].name)
         }
     }
 
-    func previewURL(for document: ScannedDocument) -> URL? {
+    // MARK: - DocumentRepository: preview
+
+    func previewURL(for document: ScannedDocument) async -> URL? {
         let pdfURL = pdfsDirectory.appendingPathComponent(document.pdfFileName)
         if fileManager.fileExists(atPath: pdfURL.path) { return pdfURL }
         guard let firstPage = document.pageFileNames.first else { return nil }
@@ -203,40 +194,7 @@ actor DocumentStore {
         return fileManager.fileExists(atPath: imageURL.path) ? imageURL : nil
     }
 
-    // MARK: - OCR
-
-    private func extractOcrText(from urls: [URL]) async -> String {
-        var parts: [String] = []
-        for url in urls {
-            guard let text = await recognizeText(in: url) else { continue }
-            if !text.isEmpty { parts.append(text) }
-        }
-        return parts.joined(separator: "\n")
-    }
-
-    private func recognizeText(in url: URL) async -> String? {
-        return await withCheckedContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, error in
-                guard error == nil,
-                      let observations = request.results as? [VNRecognizedTextObservation] else {
-                    continuation.resume(returning: nil)
-                    return
-                }
-                let lines = observations.compactMap { $0.topCandidates(1).first?.string }
-                continuation.resume(returning: lines.joined(separator: " "))
-            }
-            request.recognitionLevel = .accurate
-
-            let handler = VNImageRequestHandler(url: url, options: [:])
-            do {
-                try handler.perform([request])
-            } catch {
-                continuation.resume(returning: nil)
-            }
-        }
-    }
-
-    // MARK: - Directories
+    // MARK: - Private: directories
 
     private var baseDirectory: URL {
         let applicationSupport = try! fileManager.url(
@@ -247,7 +205,7 @@ actor DocumentStore {
     }
 
     private var imagesDirectory: URL { baseDirectory.appendingPathComponent("images", isDirectory: true) }
-    private var pdfsDirectory:   URL { baseDirectory.appendingPathComponent("pdfs",   isDirectory: true) }
+    private var pdfsDirectory: URL   { baseDirectory.appendingPathComponent("pdfs",   isDirectory: true) }
 
     private func ensureDirectories() throws {
         try fileManager.createDirectory(at: baseDirectory,   withIntermediateDirectories: true)
@@ -278,6 +236,8 @@ actor DocumentStore {
         guard let url = try resolveStorageFolderURL() else { throw DocumentStoreError.storageNotConfigured }
         return url
     }
+
+    // MARK: - Private: PDF generation
 
     private func createPDF(from images: [UIImage], at url: URL) throws {
         let pageRect = CGRect(x: 0, y: 0, width: 612, height: 792)

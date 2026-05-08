@@ -267,7 +267,7 @@ private struct FlowLayout: View {
 
     var body: some View {
         // Simple wrapping row using flexible layout
-        var width: CGFloat = 0
+        let width: CGFloat = 0
         let _ = width // suppress warning
 
         HStack(spacing: 6) {

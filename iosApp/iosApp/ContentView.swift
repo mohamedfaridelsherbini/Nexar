@@ -15,6 +15,118 @@ struct ContentView: View {
     @State private var detailDocument: ScannedDocument? = nil
     @State private var fabPulse = false
 
+    @ViewBuilder
+    private func scanButtonLabel(isProcessing: Bool) -> some View {
+        HStack(spacing: 10) {
+            if isProcessing {
+                ProgressView()
+                    .tint(NexarColor.onAccent)
+                    .scaleEffect(0.9)
+                Text("Processing…")
+                    .font(.system(size: 18, weight: .bold))
+            } else {
+                Image(systemName: "viewfinder")
+                    .font(.system(size: 22, weight: .semibold))
+                Text("Scan document")
+                    .font(.system(size: 18, weight: .bold))
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func trailingSwipeActions(for document: ScannedDocument) -> some View {
+        Button(role: .destructive) {
+            viewModel.deleteDocument(document)
+        } label: {
+            Label("Delete", systemImage: "trash")
+        }
+    }
+
+    @ViewBuilder
+    private func leadingSwipeActions(for document: ScannedDocument) -> some View {
+        if viewModel.storageFolderName != nil {
+            Button {
+                viewModel.exportDocument(document)
+            } label: {
+                Label("Export", systemImage: "arrow.up.doc")
+            }
+            .tint(NexarColor.accentPrimary)
+        }
+        Button {
+            viewModel.toggleStar(document)
+        } label: {
+            Label(document.isStarred ? "Unstar" : "Star",
+                  systemImage: document.isStarred ? "star.slash" : "star.fill")
+        }
+        .tint(.yellow)
+    }
+
+    @ViewBuilder
+    private func batchExportButtonContent(isExporting: Bool, count: Int) -> some View {
+        ZStack(alignment: .topTrailing) {
+            Circle()
+                .fill(NexarColor.surfaceSecondary)
+                .frame(width: 40, height: 40)
+                .overlay(Circle().stroke(NexarColor.borderSubtle, lineWidth: 1))
+            if isExporting {
+                ProgressView()
+                    .tint(NexarColor.accentPrimary)
+                    .frame(width: 40, height: 40)
+            } else {
+                Image(systemName: "icloud.and.arrow.up")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(NexarColor.accentPrimary)
+                    .frame(width: 40, height: 40)
+                Text("\(count)")
+                    .font(.system(size: 9, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(3)
+                    .background(NexarColor.warning, in: Circle())
+                    .offset(x: 2, y: -2)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func storageSettingsButtonContent() -> some View {
+        ZStack {
+            Circle()
+                .fill(NexarColor.surfaceSecondary)
+                .frame(width: 40, height: 40)
+                .overlay(Circle().stroke(NexarColor.borderSubtle, lineWidth: 1))
+            Image(systemName: "person")
+                .font(.system(size: 17, weight: .medium))
+                .foregroundStyle(NexarColor.foregroundPrimary)
+        }
+    }
+
+    @ViewBuilder
+    private func documentRowView(for document: ScannedDocument) -> some View {
+        let rowTransition = AnyTransition.asymmetric(
+            insertion: AnyTransition.move(edge: .bottom).combined(with: .opacity),
+            removal: .opacity
+        )
+        NexarDocumentRow(
+            document: document,
+            canExport: viewModel.storageFolderName != nil,
+            isExporting: viewModel.exportingDocumentId == document.id,
+            onPreview: { viewModel.openPreview(for: document) },
+            onExport: { handleExport(document) },
+            onRename: { handleRename(document) },
+            onStar: { viewModel.toggleStar(document) },
+            onOcrView: { ocrSheetDocument = document },
+            onShare: { shareDocument(document) },
+            onDetail: { detailDocument = document }
+        )
+        .transition(rowTransition)
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            trailingSwipeActions(for: document)
+        }
+        .swipeActions(edge: .leading, allowsFullSwipe: false) {
+            leadingSwipeActions(for: document)
+        }
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -120,56 +232,7 @@ struct ContentView: View {
                                 .transition(.opacity.combined(with: .scale(scale: 0.95)))
                             } else {
                                 ForEach(viewModel.filteredDocuments) { document in
-                                    NexarDocumentRow(
-                                        document: document,
-                                        canExport: viewModel.storageFolderName != nil,
-                                        isExporting: viewModel.exportingDocumentId == document.id,
-                                        onPreview: { viewModel.openPreview(for: document) },
-                                        onExport: {
-                                            if viewModel.storageFolderName != nil {
-                                                viewModel.exportDocument(document)
-                                            } else {
-                                                showsFolderImporter = true
-                                            }
-                                        },
-                                        onRename: {
-                                            selectedDocument = document
-                                            renameText = document.name
-                                            showsRenameAlert = true
-                                        },
-                                        onStar: { viewModel.toggleStar(document) },
-                                        onOcrView: { ocrSheetDocument = document },
-                                        onShare: { shareDocument(document) },
-                                        onDetail: { detailDocument = document }
-                                    )
-                                    .transition(.asymmetric(
-                                        insertion: .move(edge: .bottom).combined(with: .opacity),
-                                        removal: .opacity
-                                    ))
-                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                                        Button(role: .destructive) {
-                                            viewModel.deleteDocument(document)
-                                        } label: {
-                                            Label("Delete", systemImage: "trash")
-                                        }
-                                    }
-                                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
-                                        if viewModel.storageFolderName != nil {
-                                            Button {
-                                                viewModel.exportDocument(document)
-                                            } label: {
-                                                Label("Export", systemImage: "arrow.up.doc")
-                                            }
-                                            .tint(NexarColor.accentPrimary)
-                                        }
-                                        Button {
-                                            viewModel.toggleStar(document)
-                                        } label: {
-                                            Label(document.isStarred ? "Unstar" : "Star",
-                                                  systemImage: document.isStarred ? "star.slash" : "star.fill")
-                                        }
-                                        .tint(.yellow)
-                                    }
+                                    documentRowView(for: document)
                                 }
                             }
                         }
@@ -207,32 +270,19 @@ struct ContentView: View {
                         Button {
                             if !viewModel.isProcessing { startScanning() }
                         } label: {
-                        HStack(spacing: 10) {
-                            if viewModel.isProcessing {
-                                ProgressView()
-                                    .tint(NexarColor.onAccent)
-                                    .scaleEffect(0.9)
-                                Text("Processing…")
-                                    .font(.system(size: 18, weight: .bold))
-                            } else {
-                                Image(systemName: "viewfinder")
-                                    .font(.system(size: 22, weight: .semibold))
-                                Text("Scan document")
-                                    .font(.system(size: 18, weight: .bold))
-                            }
+                            scanButtonLabel(isProcessing: viewModel.isProcessing)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 64)
+                                .background(
+                                    NexarColor.accentPrimary.opacity(viewModel.isProcessing ? 0.7 : 1.0),
+                                    in: RoundedRectangle(cornerRadius: 32, style: .continuous)
+                                )
+                                .foregroundStyle(NexarColor.onAccent)
+                                .shadow(color: Color(hex: "0F172A").opacity(0.20), radius: 20, x: 0, y: 8)
                         }
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 64)
-                        .background(
-                            NexarColor.accentPrimary.opacity(viewModel.isProcessing ? 0.7 : 1.0),
-                            in: RoundedRectangle(cornerRadius: 32, style: .continuous)
-                        )
-                        .foregroundStyle(NexarColor.onAccent)
-                        .shadow(color: Color(hex: "0F172A").opacity(0.20), radius: 20, x: 0, y: 8)
-                    }
-                    .disabled(viewModel.isProcessing)
-                    .padding(.horizontal, 28)
-                    .padding(.bottom, 34)
+                        .disabled(viewModel.isProcessing)
+                        .padding(.horizontal, 28)
+                        .padding(.bottom, 34)
                     } // ZStack
                 }
                 .ignoresSafeArea(.keyboard)
@@ -272,28 +322,7 @@ struct ContentView: View {
                             Button {
                                 viewModel.batchExport()
                             } label: {
-                                ZStack(alignment: .topTrailing) {
-                                    Circle()
-                                        .fill(NexarColor.surfaceSecondary)
-                                        .frame(width: 40, height: 40)
-                                        .overlay(Circle().stroke(NexarColor.borderSubtle, lineWidth: 1))
-                                    if viewModel.isBatchExporting {
-                                        ProgressView()
-                                            .tint(NexarColor.accentPrimary)
-                                            .frame(width: 40, height: 40)
-                                    } else {
-                                        Image(systemName: "icloud.and.arrow.up")
-                                            .font(.system(size: 15, weight: .medium))
-                                            .foregroundStyle(NexarColor.accentPrimary)
-                                            .frame(width: 40, height: 40)
-                                        Text("\(viewModel.needsExportCount)")
-                                            .font(.system(size: 9, weight: .bold))
-                                            .foregroundStyle(.white)
-                                            .padding(3)
-                                            .background(NexarColor.warning, in: Circle())
-                                            .offset(x: 2, y: -2)
-                                    }
-                                }
+                                batchExportButtonContent(isExporting: viewModel.isBatchExporting, count: viewModel.needsExportCount)
                             }
                             .disabled(viewModel.isBatchExporting)
                             .accessibilityLabel("Export \(viewModel.needsExportCount) documents to storage")
@@ -302,15 +331,7 @@ struct ContentView: View {
                         Button {
                             showsFolderImporter = true
                         } label: {
-                            ZStack {
-                                Circle()
-                                    .fill(NexarColor.surfaceSecondary)
-                                    .frame(width: 40, height: 40)
-                                    .overlay(Circle().stroke(NexarColor.borderSubtle, lineWidth: 1))
-                                Image(systemName: "person")
-                                    .font(.system(size: 17, weight: .medium))
-                                    .foregroundStyle(NexarColor.foregroundPrimary)
-                            }
+                            storageSettingsButtonContent()
                         }
                         .accessibilityLabel("Storage settings")
                     }
@@ -426,6 +447,20 @@ struct ContentView: View {
 #else
         showsScanner = true
 #endif
+    }
+
+    private func handleExport(_ document: ScannedDocument) {
+        if viewModel.storageFolderName != nil {
+            viewModel.exportDocument(document)
+        } else {
+            showsFolderImporter = true
+        }
+    }
+
+    private func handleRename(_ document: ScannedDocument) {
+        selectedDocument = document
+        renameText = document.name
+        showsRenameAlert = true
     }
 
     private func shareDocument(_ document: ScannedDocument) {

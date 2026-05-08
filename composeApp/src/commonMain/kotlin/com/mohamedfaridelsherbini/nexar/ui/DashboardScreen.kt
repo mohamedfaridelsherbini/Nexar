@@ -190,8 +190,7 @@ fun DashboardScreen(
                         }
                     }
                 }
-                    } // else
-                } // AnimatedContent
+            }
 
             LocalStorageStatus(storageLocation = storageLocation)
         }

@@ -24,6 +24,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.TextSnippet
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.*
@@ -185,7 +187,7 @@ fun NexarTopBar(
             }
             Box {
                 TopBarIconButton(
-                    icon = Icons.Default.Sort,
+                    icon = Icons.AutoMirrored.Filled.Sort,
                     contentDescription = "Sort",
                     onClick = { showSortMenu = true }
                 )
@@ -721,7 +723,7 @@ fun DocumentCard(
                 }
                 if (onOcrViewClick != null && document.ocrProcessed && document.ocrText.isNotBlank()) {
                     DocumentActionChip(
-                        icon = Icons.Default.TextSnippet,
+                        icon = Icons.AutoMirrored.Filled.TextSnippet,
                         label = "OCR",
                         onClick = onOcrViewClick
                     )
@@ -914,7 +916,7 @@ fun LocalStorageStatus(storageLocation: String?) {
     val configured = storageLocation != null
     val dotColor = if (configured) NexarExtraTheme.colors.success else NexarExtraTheme.colors.warning
     val message = if (configured) {
-        val path = storageLocation?.shortPath() ?: ""
+        val path = storageLocation.shortPath()
         "Exports save to $path (category/year folders). Originals stay on this device."
     } else {
         "Local scans stay on this device until you choose an export folder."

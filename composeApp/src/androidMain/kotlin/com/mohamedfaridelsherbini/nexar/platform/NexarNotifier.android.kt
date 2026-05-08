@@ -15,6 +15,7 @@ import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.mohamedfaridelsherbini.nexar.MainActivity
+import com.mohamedfaridelsherbini.nexar.notifications.ExportReminderWorker
 import java.util.concurrent.TimeUnit
 
 private const val CH_DUPLICATE = "nexar_duplicate_alert"
@@ -47,7 +48,7 @@ actual object NexarNotifier {
     }
 
     actual fun scheduleExportReminderWorker() {
-        val request = PeriodicWorkRequestBuilder<ExportReminderWorker>(24, TimeUnit.HOURS)
+        val request = PeriodicWorkRequestBuilder<ExportReminderWorker>(24L, TimeUnit.HOURS)
             .setConstraints(
                 Constraints.Builder()
                     .setRequiresBatteryNotLow(true)

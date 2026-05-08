@@ -111,6 +111,15 @@ struct NexarLocalStatusCard: View {
     let storageConfigured: Bool
     let onConfigureTap: () -> Void
 
+    private var statusSubtitle: String {
+        if storageConfigured {
+            let scanLabel = scanCount == 1 ? "scan" : "scans"
+            return "\(scanCount) \(scanLabel) · \(availableStorage) available"
+        } else {
+            return "Tap to choose an export destination."
+        }
+    }
+
     var body: some View {
         HStack(spacing: 14) {
             ZStack {
@@ -126,9 +135,7 @@ struct NexarLocalStatusCard: View {
                 Text(storageConfigured ? "Stored locally" : "No export folder")
                     .font(.system(size: 17, weight: .bold))
                     .foregroundStyle(NexarColor.foregroundPrimary)
-                Text(storageConfigured
-                     ? "\(scanCount) \(scanCount == 1 ? "scan" : "scans") · \(availableStorage) available"
-                     : "Tap to choose an export destination.")
+                Text(statusSubtitle)
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(NexarColor.foregroundSecondary)
             }

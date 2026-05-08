@@ -59,6 +59,9 @@ kotlin {
             
             // DocumentFile for SAF
             implementation(libs.androidx.documentfile)
+
+            // WorkManager for background notifications
+            implementation(libs.androidx.work.runtime.ktx)
         }
         iosMain.dependencies {
             implementation(libs.androidx.room.runtime)

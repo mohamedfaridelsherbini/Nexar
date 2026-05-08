@@ -1,11 +1,17 @@
 package com.mohamedfaridelsherbini.nexar.ui.components
 
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -464,6 +470,7 @@ fun CategoryPill(category: DocumentCategory) {
 fun SwipeableDocumentCard(
     document: ScannedDocument,
     exportEnabled: Boolean,
+    modifier: Modifier = Modifier,
     isProcessing: Boolean = false,
     isExporting: Boolean = false,
     onPreviewClick: () -> Unit,
@@ -494,6 +501,12 @@ fun SwipeableDocumentCard(
 
     SwipeToDismissBox(
         state = dismissState,
+        modifier = modifier.semantics {
+            customActions = listOf(
+                CustomAccessibilityAction(label = "Export ${document.name}") { onExportClick(); true },
+                CustomAccessibilityAction(label = "Delete ${document.name}") { onDeleteClick(); true }
+            )
+        },
         backgroundContent = {
             val direction = dismissState.dismissDirection
             val isStart = direction == SwipeToDismissBoxValue.StartToEnd
@@ -554,7 +567,16 @@ fun DocumentCard(
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(16.dp))
             .then(if (onDetailClick != null) Modifier.clickable { onDetailClick() } else Modifier)
-            .padding(16.dp),
+            .padding(16.dp)
+            .semantics(mergeDescendants = true) {
+                contentDescription = buildString {
+                    append(document.name)
+                    append(", ${document.category.displayName}")
+                    if (document.isStarred) append(", starred")
+                    if (document.duplicateOfId != null) append(", possible duplicate")
+                    append(", ${if (document.isExportedToStorage) "exported" else "ready to export"}")
+                }
+            },
         verticalAlignment = Alignment.Top
     ) {
         NexarLogo(
@@ -821,13 +843,42 @@ fun NexarEmptyState(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        NexarLogo(
-            size = 72.dp,
-            fieldColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
-            sheetColor = MaterialTheme.colorScheme.surfaceVariant,
-            foldColor = NexarExtraTheme.colors.borderSubtle,
-            accentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+        val pulse = rememberInfiniteTransition(label = "empty_pulse")
+        val pulseScale by pulse.animateFloat(
+            initialValue = 0.82f,
+            targetValue = 1.14f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "empty_pulse_scale"
         )
+        val pulseAlpha by pulse.animateFloat(
+            initialValue = 0.10f,
+            targetValue = 0.22f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "empty_pulse_alpha"
+        )
+        Box(contentAlignment = Alignment.Center) {
+            // Pulsing background ring
+            Box(
+                modifier = Modifier
+                    .size(100.dp)
+                    .scale(pulseScale)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = pulseAlpha))
+            )
+            NexarLogo(
+                size = 72.dp,
+                fieldColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.06f),
+                sheetColor = MaterialTheme.colorScheme.surfaceVariant,
+                foldColor = NexarExtraTheme.colors.borderSubtle,
+                accentColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.45f)
+            )
+        }
         val heading = when {
             searchQuery.isNotBlank() -> "No matches found"
             filter == DashboardFilter.NeedsExport -> "Everything exported"
@@ -898,13 +949,43 @@ private fun String.shortPath() = substringAfterLast('/').ifEmpty { this }.take(3
 // ─── FAB ──────────────────────────────────────────────────────────────────────
 
 @Composable
-fun NexarFAB(onClick: () -> Unit) {
-    Button(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(64.dp)
-            .shadow(
+fun NexarFAB(onClick: () -> Unit, hasDocuments: Boolean = true) {
+    val pulse = rememberInfiniteTransition(label = "fab_pulse")
+    val ringAlpha by pulse.animateFloat(
+        initialValue = 0.35f,
+        targetValue = 0f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "fab_ring_alpha"
+    )
+    val ringScale by pulse.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.16f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1400, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "fab_ring_scale"
+    )
+    Box(contentAlignment = Alignment.Center) {
+        if (!hasDocuments) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(64.dp)
+                    .scale(ringScale)
+                    .clip(RoundedCornerShape(32.dp))
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = ringAlpha))
+            )
+        }
+        Button(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .shadow(
                 elevation = 20.dp,
                 shape = RoundedCornerShape(32.dp),
                 ambientColor = Color(0x330F172A),
@@ -932,6 +1013,7 @@ fun NexarFAB(onClick: () -> Unit) {
             fontWeight = FontWeight.Bold
         )
     }
+    } // closes Box(contentAlignment = Alignment.Center)
 }
 
 // ─── Skeleton loading card ────────────────────────────────────────────────────

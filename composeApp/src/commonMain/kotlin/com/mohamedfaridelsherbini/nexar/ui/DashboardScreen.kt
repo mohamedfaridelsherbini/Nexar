@@ -12,6 +12,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import com.mohamedfaridelsherbini.nexar.platform.sharePdf
 import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardFilter
@@ -130,22 +135,26 @@ fun DashboardScreen(
                 }
             }
 
-            when {
-                uiState.isLoadingDocuments -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
+            // AnimatedContent drives a cross-fade between loading / empty / content states.
+            AnimatedContent(
+                targetState = when {
+                    uiState.isLoadingDocuments -> 0
+                    uiState.visibleDocuments.isEmpty() -> 1
+                    else -> 2
+                },
+                transitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(200)) },
+                modifier = Modifier.fillMaxWidth().weight(1f),
+                label = "dashboard_content"
+            ) { contentState ->
+                when (contentState) {
+                    0 -> LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(3) { SkeletonDocumentCard() }
                     }
-                }
-                uiState.visibleDocuments.isEmpty() -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
+                    1 -> Box(
+                        modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
                         NexarEmptyState(
@@ -153,16 +162,13 @@ fun DashboardScreen(
                             searchQuery = uiState.searchQuery
                         )
                     }
-                }
-                else -> {
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
+                    else -> LazyColumn(
+                        modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(uiState.visibleDocuments, key = { it.id }) { doc ->
                             SwipeableDocumentCard(
+                                modifier = Modifier.animateItem(),
                                 document = doc,
                                 exportEnabled = storageLocation != null,
                                 isProcessing = uiState.processingDocumentId == doc.id,
@@ -184,7 +190,8 @@ fun DashboardScreen(
                         }
                     }
                 }
-            }
+                    } // else
+                } // AnimatedContent
 
             LocalStorageStatus(storageLocation = storageLocation)
         }
@@ -194,7 +201,7 @@ fun DashboardScreen(
                 .align(Alignment.BottomCenter)
                 .padding(horizontal = 24.dp, vertical = 24.dp)
         ) {
-            NexarFAB(onClick = onScanClick)
+            NexarFAB(onClick = onScanClick, hasDocuments = uiState.documents.isNotEmpty())
         }
     }
 

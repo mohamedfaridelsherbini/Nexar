@@ -31,10 +31,23 @@ import androidx.savedstate.serialization.SavedStateConfiguration
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
+import com.mohamedfaridelsherbini.nexar.platform.NexarPrefs
+import com.mohamedfaridelsherbini.nexar.ui.OnboardingScreen
 
 @Composable
 fun App() {
     NexarTheme(dynamicColor = false) {
+        var onboardingComplete by remember { mutableStateOf(NexarPrefs.isOnboardingComplete) }
+
+        if (!onboardingComplete) {
+            OnboardingScreen(
+                onComplete = {
+                    NexarPrefs.isOnboardingComplete = true
+                    onboardingComplete = true
+                }
+            )
+            return@NexarTheme
+        }
         val navStateConfiguration = remember {
             SavedStateConfiguration {
                 serializersModule =

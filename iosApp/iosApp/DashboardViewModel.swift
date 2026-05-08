@@ -101,7 +101,10 @@ final class DashboardViewModel: ObservableObject {
     init(repository: DocumentRepository, processDocument: ProcessDocumentUseCase? = nil) {
         self.repository = repository
         self.processDocument = processDocument ?? ProcessDocumentUseCase(repository: repository)
-        Task { await refresh() }
+        Task {
+            await NexarNotificationService.shared.requestPermission()
+            await refresh()
+        }
     }
 
     // MARK: - Computed
@@ -142,6 +145,8 @@ final class DashboardViewModel: ObservableObject {
         do {
             documents = try await repository.loadDocuments()
             storageFolderName = await repository.storageFolderName()
+            let pending = needsExportCount
+            await NexarNotificationService.shared.scheduleExportReminder(count: pending)
         } catch {
             self.error = .ocrFailed("loading documents")
         }

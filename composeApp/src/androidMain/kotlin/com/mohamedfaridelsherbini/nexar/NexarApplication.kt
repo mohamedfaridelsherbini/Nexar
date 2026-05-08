@@ -7,6 +7,9 @@ import com.mohamedfaridelsherbini.nexar.di.initKoin
 import com.mohamedfaridelsherbini.nexar.domain.usecase.initOcr
 import com.mohamedfaridelsherbini.nexar.platform.initHaptic
 import com.mohamedfaridelsherbini.nexar.platform.initShare
+import com.mohamedfaridelsherbini.nexar.platform.initNexarPrefs
+import com.mohamedfaridelsherbini.nexar.platform.initNexarNotifier
+import com.mohamedfaridelsherbini.nexar.platform.NexarNotifier
 import org.koin.android.ext.koin.androidContext
 import org.koin.android.ext.koin.androidLogger
 
@@ -17,10 +20,13 @@ class NexarApplication : Application() {
         initOcr(this)
         initHaptic(this)
         initShare(this)
+        initNexarPrefs(this)
+        initNexarNotifier(this)
         initKoin {
             androidLogger()
             androidContext(this@NexarApplication)
             modules(androidModule)
         }
+        NexarNotifier.scheduleExportReminderWorker()
     }
 }

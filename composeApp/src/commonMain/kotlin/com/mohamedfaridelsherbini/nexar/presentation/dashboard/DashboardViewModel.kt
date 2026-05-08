@@ -9,6 +9,7 @@ import com.mohamedfaridelsherbini.nexar.domain.usecase.SearchDocumentsUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.StorageAnalyticsUseCase
 import com.mohamedfaridelsherbini.nexar.platform.triggerSuccessHaptic
 import com.mohamedfaridelsherbini.nexar.platform.triggerWarningHaptic
+import com.mohamedfaridelsherbini.nexar.platform.NexarNotifier
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -104,7 +105,10 @@ class DashboardViewModel(
                 useCases.addScannedDocument(document)
                 triggerSuccessHaptic()
                 val isDuplicate = processScannedDocument(document)
-                if (isDuplicate) triggerWarningHaptic()
+                if (isDuplicate) {
+                    triggerWarningHaptic()
+                    NexarNotifier.postDuplicateAlert(document.name)
+                }
             } catch (e: Exception) {
                 _prefs.update { it.copy(error = NexarError.OcrFailed(document.name)) }
             } finally {

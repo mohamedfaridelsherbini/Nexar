@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var renameText = ""
     @State private var ocrSheetDocument: ScannedDocument? = nil
     @State private var detailDocument: ScannedDocument? = nil
+    @State private var fabPulse = false
 
     var body: some View {
         NavigationStack {
@@ -116,6 +117,7 @@ struct ContentView: View {
                                     filter: viewModel.activeFilter,
                                     searchText: viewModel.searchText
                                 )
+                                .transition(.opacity.combined(with: .scale(scale: 0.95)))
                             } else {
                                 ForEach(viewModel.filteredDocuments) { document in
                                     NexarDocumentRow(
@@ -140,6 +142,10 @@ struct ContentView: View {
                                         onShare: { shareDocument(document) },
                                         onDetail: { detailDocument = document }
                                     )
+                                    .transition(.asymmetric(
+                                        insertion: .move(edge: .bottom).combined(with: .opacity),
+                                        removal: .opacity
+                                    ))
                                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                         Button(role: .destructive) {
                                             viewModel.deleteDocument(document)
@@ -173,6 +179,7 @@ struct ContentView: View {
                             RoundedRectangle(cornerRadius: 24, style: .continuous)
                                 .stroke(NexarColor.borderSubtle, lineWidth: 1)
                         )
+                        .animation(.spring(response: 0.5, dampingFraction: 0.85), value: viewModel.filteredDocuments.count)
                     }
                     .padding(.horizontal, 28)
                     .padding(.bottom, 140)
@@ -183,9 +190,23 @@ struct ContentView: View {
                 // Floating scan button
                 VStack {
                     Spacer()
-                    Button {
-                        if !viewModel.isProcessing { startScanning() }
-                    } label: {
+                    ZStack {
+                        // Attention pulse ring — only when library is empty
+                        if viewModel.filteredDocuments.isEmpty && !viewModel.isProcessing {
+                            RoundedRectangle(cornerRadius: 32, style: .continuous)
+                                .fill(NexarColor.accentPrimary.opacity(fabPulse ? 0 : 0.35))
+                                .scaleEffect(fabPulse ? 1.14 : 1.0)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 64)
+                                .padding(.horizontal, 28)
+                                .animation(
+                                    .easeInOut(duration: 1.4).repeatForever(autoreverses: true),
+                                    value: fabPulse
+                                )
+                        }
+                        Button {
+                            if !viewModel.isProcessing { startScanning() }
+                        } label: {
                         HStack(spacing: 10) {
                             if viewModel.isProcessing {
                                 ProgressView()
@@ -212,8 +233,10 @@ struct ContentView: View {
                     .disabled(viewModel.isProcessing)
                     .padding(.horizontal, 28)
                     .padding(.bottom, 34)
+                    } // ZStack
                 }
                 .ignoresSafeArea(.keyboard)
+                .onAppear { fabPulse = true }
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -240,6 +263,7 @@ struct ContentView: View {
                                 .foregroundStyle(NexarColor.foregroundPrimary)
                         }
                     }
+                    .accessibilityLabel("Sort documents")
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
@@ -272,6 +296,7 @@ struct ContentView: View {
                                 }
                             }
                             .disabled(viewModel.isBatchExporting)
+                            .accessibilityLabel("Export \(viewModel.needsExportCount) documents to storage")
                         }
 
                         Button {
@@ -287,6 +312,7 @@ struct ContentView: View {
                                     .foregroundStyle(NexarColor.foregroundPrimary)
                             }
                         }
+                        .accessibilityLabel("Storage settings")
                     }
                 }
             }

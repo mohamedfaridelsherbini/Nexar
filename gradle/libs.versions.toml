@@ -28,6 +28,7 @@ documentfile = "1.1.0"
 koin = "4.2.1"
 coroutines = "1.10.2"
 turbine = "1.2.0"
+work = "2.10.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -80,6 +81,7 @@ androidx-documentfile = { module = "androidx.documentfile:documentfile", version
 # Coroutines
 kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
+androidx-work-runtime-ktx = { module = "androidx.work:work-runtime-ktx", version.ref = "work" }
 
 # Koin
 koin-core = { module = "io.insert-koin:koin-core", version.ref = "koin" }

@@ -51,7 +51,16 @@ final class ProcessDocumentUseCase {
         // 5. Persist enriched document
         try await repository.saveDocument(document)
 
-        // 6. Side effects: Spotlight + widget
+        // 6. Duplicate alert notification
+        if let duplicateId = document.duplicateOfId,
+           let original = existing.first(where: { $0.id == duplicateId }) {
+            await NexarNotificationService.shared.postDuplicateAlert(
+                docName: document.name,
+                originalName: original.name
+            )
+        }
+
+        // 7. Side effects: Spotlight + widget
         SpotlightIndexer.shared.index(document)
         let unexportedCount = (existing + [document]).filter { !$0.isExportedToStorage }.count
         WidgetDataProvider.update(unexportedCount: unexportedCount, lastScanName: document.name)

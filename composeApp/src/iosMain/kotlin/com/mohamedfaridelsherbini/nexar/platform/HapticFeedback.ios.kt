@@ -1,7 +1,5 @@
 package com.mohamedfaridelsherbini.nexar.platform
 
-import platform.UIKit.UIImpactFeedbackGenerator
-import platform.UIKit.UIImpactFeedbackStyle
 import platform.UIKit.UINotificationFeedbackGenerator
 import platform.UIKit.UINotificationFeedbackType
 

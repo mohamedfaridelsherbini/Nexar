@@ -121,7 +121,7 @@ fun DocumentDetailScreen(
                             .background(MaterialTheme.colorScheme.surfaceVariant)
                             .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(12.dp))
                             .then(
-                                if (canPreview) Modifier.clickable { onPreview?.invoke(currentDocument) }
+                                if (canPreview) Modifier.clickable { onPreview.invoke(currentDocument) }
                                 else Modifier
                             ),
                         contentAlignment = Alignment.Center

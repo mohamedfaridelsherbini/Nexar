@@ -1,7 +1,6 @@
 package com.mohamedfaridelsherbini.nexar.domain
 
 import com.mohamedfaridelsherbini.nexar.domain.classifier.DuplicateDetector
-import com.mohamedfaridelsherbini.nexar.domain.model.DocumentCategory
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import kotlin.test.Test
 import kotlin.test.assertEquals

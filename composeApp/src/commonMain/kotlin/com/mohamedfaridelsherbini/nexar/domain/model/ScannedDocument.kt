@@ -14,5 +14,9 @@ data class ScannedDocument(
     val tags: List<String> = emptyList(),
     val isExportedToStorage: Boolean = false,
     /** True when OCR has been attempted (whether or not text was found). */
-    val ocrProcessed: Boolean = false
+    val ocrProcessed: Boolean = false,
+    val isStarred: Boolean = false,
+    val extractedAmount: String? = null,
+    val extractedDate: String? = null,
+    val duplicateOfId: String? = null
 )

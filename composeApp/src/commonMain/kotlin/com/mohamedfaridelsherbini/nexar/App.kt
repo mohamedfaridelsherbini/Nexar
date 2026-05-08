@@ -12,17 +12,19 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.mohamedfaridelsherbini.nexar.ui.theme.NexarExtraTheme
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import com.mohamedfaridelsherbini.nexar.navigation.Dashboard
+import com.mohamedfaridelsherbini.nexar.navigation.DocumentDetail
 import com.mohamedfaridelsherbini.nexar.navigation.Scanner
-import com.mohamedfaridelsherbini.nexar.di.getAppContainer
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
+import org.koin.compose.viewmodel.koinViewModel
+import com.mohamedfaridelsherbini.nexar.platform.sharePdf
 import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardViewModel
 import com.mohamedfaridelsherbini.nexar.ui.DashboardScreen
+import com.mohamedfaridelsherbini.nexar.ui.DocumentDetailScreen
 import com.mohamedfaridelsherbini.nexar.ui.theme.NexarTheme
 import com.mohamedfaridelsherbini.nexar.storage.StoragePickerBridge
 import androidx.savedstate.serialization.SavedStateConfiguration
@@ -33,7 +35,6 @@ import kotlinx.serialization.modules.subclass
 @Composable
 fun App() {
     NexarTheme(dynamicColor = false) {
-        val appContainer = remember { getAppContainer() }
         val navStateConfiguration = remember {
             SavedStateConfiguration {
                 serializersModule =
@@ -41,14 +42,13 @@ fun App() {
                         polymorphic(NavKey::class) {
                             subclass(Dashboard::class, Dashboard.serializer())
                             subclass(Scanner::class, Scanner.serializer())
+                            subclass(DocumentDetail::class, DocumentDetail.serializer())
                         }
                     }
             }
         }
         val backStack = rememberNavBackStack(navStateConfiguration, Dashboard)
-        val dashboardViewModel: DashboardViewModel = viewModel {
-            DashboardViewModel(appContainer.dashboardUseCases, appContainer.ocrProcessor)
-        }
+        val dashboardViewModel: DashboardViewModel = koinViewModel()
         val uiState by dashboardViewModel.uiState.collectAsState()
 
         var documentToRename by remember { mutableStateOf<ScannedDocument?>(null) }
@@ -63,14 +63,24 @@ fun App() {
             entryProvider = entryProvider {
                 entry<Dashboard> {
                     DashboardScreen(
-                        documents = uiState.documents,
-                        storageLocation = uiState.storageLocation,
+                        uiState = uiState,
                         onScanClick = { backStack.add(Scanner()) },
                         onRenameClick = { documentToRename = it },
-                        onDocumentClick = { documentToPreview = it },
+                        onDocumentClick = { doc -> documentToPreview = doc },
                         onSetStorageClick = { showStoragePicker = true },
                         onSaveToStorageClick = { dashboardViewModel.onSaveDocumentToStorage(it) },
-                        onCreateFolderClick = { showCreateFolderDialog = true }
+                        onCreateFolderClick = { showCreateFolderDialog = true },
+                        onDeleteClick = { dashboardViewModel.onDeleteDocument(it) },
+                        onStarClick = { dashboardViewModel.onToggleStar(it) },
+                        onSortChanged = { dashboardViewModel.onSortChanged(it) },
+                        onBatchExportClick = { dashboardViewModel.onBatchExport() },
+                        onDetailClick = { backStack.add(DocumentDetail(it.id)) },
+                        onBatchResultDismissed = { dashboardViewModel.onBatchResultDismissed() },
+                        onSearchQueryChanged = { dashboardViewModel.onSearchQueryChanged(it) },
+                        onFilterChanged = { dashboardViewModel.onFilterChanged(it) },
+                        onOcrSheetOpen = { dashboardViewModel.onOcrSheetOpen(it) },
+                        onOcrSheetDismissed = { dashboardViewModel.onOcrSheetDismissed() },
+                        onErrorDismissed = { dashboardViewModel.onErrorDismissed() }
                     )
                 }
                 entry<Scanner> {
@@ -84,24 +94,42 @@ fun App() {
                         }
                     )
                 }
+                entry<DocumentDetail> { key ->
+                    val doc = uiState.documents.find { it.id == key.documentId }
+                    if (doc != null) {
+                        DocumentDetailScreen(
+                            document = doc,
+                            onBack = { backStack.removeAt(backStack.size - 1) },
+                            onSave = { updated -> dashboardViewModel.onSaveDocumentUpdate(updated) },
+                            onExport = { dashboardViewModel.onSaveDocumentToStorage(it) },
+                            onShare = if (doc.pdfUri != null) {
+                                { d -> sharePdf(d.pdfUri!!, d.name) }
+                            } else null,
+                            onPreview = if (doc.pdfUri != null || doc.imageUris.isNotEmpty()) {
+                                { d -> documentToPreview = d }
+                            } else null,
+                            exportEnabled = uiState.storageLocation != null
+                        )
+                    }
+                }
             }
         )
 
-        if (documentToRename != null) {
-            RenameDialog(
-                currentName = documentToRename!!.name,
-                onConfirm = { newName ->
-                    dashboardViewModel.onRenameDocument(documentToRename!!.id, newName)
-                    documentToRename = null
-                },
-                onDismiss = { documentToRename = null }
+        documentToPreview?.let { doc ->
+            com.mohamedfaridelsherbini.nexar.ui.PreviewBridge(
+                document = doc,
+                onDismiss = { documentToPreview = null }
             )
         }
 
-        if (documentToPreview != null) {
-            com.mohamedfaridelsherbini.nexar.ui.PreviewBridge(
-                document = documentToPreview!!,
-                onDismiss = { documentToPreview = null }
+        documentToRename?.let { doc ->
+            RenameDialog(
+                currentName = doc.name,
+                onConfirm = { newName ->
+                    dashboardViewModel.onRenameDocument(doc.id, newName)
+                    documentToRename = null
+                },
+                onDismiss = { documentToRename = null }
             )
         }
 

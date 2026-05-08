@@ -176,10 +176,13 @@ struct NexarDocumentRow: View {
     let onPreview: () -> Void
     let onExport: () -> Void
     let onRename: () -> Void
+    var onStar: (() -> Void)? = nil
+    var onOcrView: (() -> Void)? = nil
+    var onShare: (() -> Void)? = nil
+    var onDetail: (() -> Void)? = nil
 
     private var statusLabel: String {
-        if document.isExportedToStorage { return "Exported" }
-        return "Ready to export"
+        document.isExportedToStorage ? "Exported" : "Ready to export"
     }
     private var statusColor: Color {
         document.isExportedToStorage ? NexarColor.success : NexarColor.accentPrimary
@@ -187,59 +190,83 @@ struct NexarDocumentRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            // Document Aperture thumbnail
             NexarDocumentMark()
 
             VStack(alignment: .leading, spacing: 5) {
-                Text(document.name)
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundStyle(NexarColor.foregroundPrimary)
-                    .lineLimit(1)
+                HStack {
+                    Text(document.name)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundStyle(NexarColor.foregroundPrimary)
+                        .lineLimit(1)
+                    Spacer()
+                    if let onStar {
+                        Button(action: onStar) {
+                            Image(systemName: document.isStarred ? "star.fill" : "star")
+                                .font(.system(size: 14))
+                                .foregroundStyle(document.isStarred ? Color.yellow : NexarColor.foregroundMuted)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
 
                 let pages = document.pageCount
                 Text("\(pages) \(pages == 1 ? "page" : "pages")")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundStyle(NexarColor.foregroundSecondary)
 
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 6) {
+                        Text(statusLabel)
+                            .font(.system(size: 12, weight: .bold))
+                            .foregroundStyle(statusColor)
+
+                        if document.category != .other {
+                            CategoryPill(category: document.category)
+                        }
+
+                        if let amount = document.extractedAmount {
+                            Text(amount)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundStyle(Color(hex: "155724"))
+                                .padding(.horizontal, 7).padding(.vertical, 2)
+                                .background(Color(hex: "D4EDDA"), in: Capsule())
+                        }
+
+                        if document.ocrProcessed {
+                            let ocrLabel = document.ocrText.isEmpty ? "No text" : "Text found"
+                            let ocrColor = document.ocrText.isEmpty ? NexarColor.foregroundMuted : NexarColor.success
+                            Text("· \(ocrLabel)")
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(ocrColor)
+                        }
+
+                        if document.duplicateOfId != nil {
+                            Label("Duplicate", systemImage: "doc.on.doc")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(NexarColor.warning)
+                        }
+                    }
+                }
+
+                // Action buttons
                 HStack(spacing: 6) {
-                    Text(statusLabel)
-                        .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(statusColor)
-
-                    if document.category != .other {
-                        CategoryPill(category: document.category)
+                    SmallActionButton(icon: "eye", onClick: onPreview)
+                    SmallActionButton(icon: "pencil", onClick: onRename)
+                    if canExport {
+                        SmallActionButton(icon: document.isExportedToStorage ? "checkmark.circle" : "icloud.and.arrow.up",
+                                          isAccent: true, onClick: onExport)
                     }
-
-                    if document.ocrProcessed {
-                        let ocrLabel = document.ocrText.isEmpty ? "No text" : "Text found"
-                        let ocrColor = document.ocrText.isEmpty ? NexarColor.foregroundMuted : NexarColor.success
-                        Text("· \(ocrLabel)")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(ocrColor)
+                    if let onOcrView, document.ocrProcessed && !document.ocrText.isEmpty {
+                        SmallActionButton(icon: "text.viewfinder", onClick: onOcrView)
+                    }
+                    if let onShare {
+                        SmallActionButton(icon: "square.and.arrow.up", onClick: onShare)
+                    }
+                    if let onDetail {
+                        SmallActionButton(icon: "info.circle", onClick: onDetail)
                     }
                 }
-            }
-
-            Spacer()
-
-            VStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    RowActionButton(icon: "eye", onClick: onPreview)
-                    RowActionButton(icon: "pencil", onClick: onRename)
-                }
-                if canExport {
-                    RowActionButton(
-                        icon: "square.and.arrow.up",
-                        isAccent: true,
-                        onClick: onExport
-                    )
-                } else {
-                    RowActionButton(
-                        icon: "externaldrive.badge.xmark",
-                        isWarning: true,
-                        onClick: onExport
-                    )
-                }
+                .padding(.top, 4)
             }
         }
         .padding(14)
@@ -251,37 +278,26 @@ struct NexarDocumentRow: View {
     }
 }
 
-private struct RowActionButton: View {
+private struct SmallActionButton: View {
     let icon: String
     var isAccent: Bool = false
     var isWarning: Bool = false
     let onClick: () -> Void
 
-    private var bg: Color {
-        if isAccent { return NexarColor.accentPrimary.opacity(0.1) }
-        if isWarning { return NexarColor.warning.opacity(0.08) }
-        return NexarColor.surfaceElevated
-    }
-    private var fg: Color {
-        if isAccent { return NexarColor.accentPrimary }
-        if isWarning { return NexarColor.warning }
-        return NexarColor.foregroundSecondary
-    }
-    private var border: Color {
-        if isAccent || isWarning { return .clear }
-        return NexarColor.borderSubtle
-    }
-
     var body: some View {
         Button(action: onClick) {
             Image(systemName: icon)
-                .font(.system(size: 17))
-                .frame(width: 38, height: 38)
-                .background(bg, in: RoundedRectangle(cornerRadius: 13, style: .continuous))
-                .foregroundStyle(fg)
+                .font(.system(size: 13, weight: .medium))
+                .frame(width: 30, height: 28)
+                .background(
+                    isAccent ? NexarColor.accentPrimary.opacity(0.1) :
+                    isWarning ? NexarColor.warning.opacity(0.1) : NexarColor.surfaceSecondary,
+                    in: RoundedRectangle(cornerRadius: 8, style: .continuous)
+                )
+                .foregroundStyle(isAccent ? NexarColor.accentPrimary : isWarning ? NexarColor.warning : NexarColor.foregroundSecondary)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 13, style: .continuous)
-                        .stroke(border, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(NexarColor.borderSubtle, lineWidth: 1)
                 )
         }
         .buttonStyle(.plain)
@@ -335,6 +351,7 @@ struct NexarQuickFilters: View {
                     selectedFg: NexarColor.onAccent
                 ) { selected = .needsExport }
 
+                FilterChip(label: "⭐ Starred", selected: selected == .starred)    { selected = .starred }
                 FilterChip(label: "Receipts",  selected: selected == .receipt)   { selected = .receipt }
                 FilterChip(label: "Invoices",  selected: selected == .invoice)   { selected = .invoice }
                 FilterChip(label: "IDs",       selected: selected == .idDocument){ selected = .idDocument }
@@ -384,12 +401,14 @@ struct NexarEmptyState: View {
     private var heading: String {
         if !searchText.isEmpty { return "No matches found" }
         if filter == .needsExport { return "Everything exported" }
+        if filter == .starred { return "No starred documents" }
         if let cat = filter.category { return "No \(cat.folderName.lowercased()) found" }
         return "No documents yet"
     }
     private var body_: String {
         if !searchText.isEmpty { return "OCR text, category, and document name are all searched." }
         if filter == .needsExport { return "All your scans have been exported." }
+        if filter == .starred { return "Tap the star on any document to mark it as a favourite." }
         if filter.category != nil { return "Scan a document — Nexar will auto-detect the category." }
         return "Tap Scan document below to capture your first scan."
     }

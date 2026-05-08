@@ -1,6 +1,6 @@
 import Foundation
 
-enum DocumentCategory: String, Codable, CaseIterable {
+enum DocumentCategory: String, Codable, CaseIterable, Hashable {
     case receipt    = "Receipt"
     case invoice    = "Invoice"
     case idDocument = "ID"
@@ -31,6 +31,10 @@ struct ScannedDocument: Identifiable, Codable, Hashable {
     var category: DocumentCategory = .other
     var tags: [String] = []
     var ocrProcessed: Bool = false
+    var isStarred: Bool = false
+    var extractedAmount: String? = nil
+    var extractedDate: String? = nil
+    var duplicateOfId: String? = nil
 
     var pageCount: Int { pageFileNames.count }
 }

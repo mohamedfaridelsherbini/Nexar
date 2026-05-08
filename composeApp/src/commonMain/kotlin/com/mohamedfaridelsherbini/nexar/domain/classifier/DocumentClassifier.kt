@@ -2,70 +2,78 @@ package com.mohamedfaridelsherbini.nexar.domain.classifier
 
 import com.mohamedfaridelsherbini.nexar.domain.model.DocumentCategory
 
-object DocumentClassifier {
-    private val receiptKeywords = setOf(
-        "receipt", "subtotal", "cashier", "store", "thank you for shopping",
-        "change", "loyalty", "supermarket", "hypermarket", "carrefour", "walmart",
-        "grocery", "amount due", "amount paid", "your total"
-    )
-    private val invoiceKeywords = setOf(
-        "invoice", "bill to", "billing address", "due date", "payment due",
-        "invoice number", "inv #", "invoice #", "vat", "net amount",
-        "line item", "unit price", "qty", "quantity", "subtotal", "balance due"
-    )
-    private val idDocumentKeywords = setOf(
-        "passport", "national id", "identity card", "driver's license",
-        "driving licence", "date of birth", "nationality", "place of birth",
-        "license no", "id number", "personal no", "sex", "issuing authority",
-        "expiry date", "expiration date", "mrz", "bearer"
-    )
-    private val contractKeywords = setOf(
-        "agreement", "contract", "terms and conditions", "hereby agrees",
-        "parties agree", "binding agreement", "obligation", "whereas",
-        "in witness whereof", "hereinafter", "indemnification", "arbitration",
-        "governing law", "clause", "schedule", "exhibit", "addendum"
-    )
-    private val medicalKeywords = setOf(
-        "patient", "diagnosis", "prescription", "doctor", "physician",
-        "hospital", "clinic", "medication", "dosage", "mg", "ml",
-        "treatment", "referral", "lab result", "blood pressure", "test result",
-        "medical record", "healthcare"
-    )
+private data class ClassificationRule(
+    val category: DocumentCategory,
+    val label: String,
+    val keywords: Set<String>
+)
 
-    fun classify(ocrText: String): DocumentCategory {
+private val classificationRules = listOf(
+    ClassificationRule(
+        DocumentCategory.IdDocument, "id", setOf(
+            "passport", "national id", "identity card", "driver's license",
+            "driving licence", "date of birth", "nationality", "place of birth",
+            "license no", "id number", "personal no", "sex", "issuing authority",
+            "expiry date", "expiration date", "mrz", "bearer"
+        )
+    ),
+    ClassificationRule(
+        DocumentCategory.Contract, "contract", setOf(
+            "agreement", "contract", "terms and conditions", "hereby agrees",
+            "parties agree", "binding agreement", "obligation", "whereas",
+            "in witness whereof", "hereinafter", "indemnification", "arbitration",
+            "governing law", "clause", "schedule", "exhibit", "addendum"
+        )
+    ),
+    ClassificationRule(
+        DocumentCategory.Medical, "medical", setOf(
+            "patient", "diagnosis", "prescription", "doctor", "physician",
+            "hospital", "clinic", "medication", "dosage", "mg", "ml",
+            "treatment", "referral", "lab result", "blood pressure", "test result",
+            "medical record", "healthcare"
+        )
+    ),
+    ClassificationRule(
+        DocumentCategory.Invoice, "invoice", setOf(
+            "invoice", "bill to", "billing address", "due date", "payment due",
+            "invoice number", "inv #", "invoice #", "vat", "net amount",
+            "line item", "unit price", "qty", "quantity", "subtotal", "balance due"
+        )
+    ),
+    ClassificationRule(
+        DocumentCategory.Receipt, "receipt", setOf(
+            "receipt", "subtotal", "cashier", "store", "thank you for shopping",
+            "change", "loyalty", "supermarket", "hypermarket", "carrefour", "walmart",
+            "grocery", "amount due", "amount paid", "your total"
+        )
+    )
+)
+
+object DocumentClassifier : ClassifierService {
+
+    override fun classify(ocrText: String): DocumentCategory {
         if (ocrText.isBlank()) return DocumentCategory.Other
         val lower = ocrText.lowercase()
-        val scores = mapOf(
-            DocumentCategory.IdDocument to idDocumentKeywords.count { lower.contains(it) },
-            DocumentCategory.Contract to contractKeywords.count { lower.contains(it) },
-            DocumentCategory.Medical to medicalKeywords.count { lower.contains(it) },
-            DocumentCategory.Invoice to invoiceKeywords.count { lower.contains(it) },
-            DocumentCategory.Receipt to receiptKeywords.count { lower.contains(it) }
-        )
-        val best = scores.maxByOrNull { it.value }
-        return if ((best?.value ?: 0) >= 2) best!!.key else DocumentCategory.Other
+        val best = classificationRules.maxByOrNull { rule ->
+            rule.keywords.count { lower.contains(it) }
+        } ?: return DocumentCategory.Other
+        val score = best.keywords.count { lower.contains(it) }
+        return if (score >= 2) best.category else DocumentCategory.Other
     }
 
-    fun extractTags(ocrText: String): List<String> {
+    override fun extractTags(ocrText: String): List<String> {
         if (ocrText.isBlank()) return emptyList()
         val lower = ocrText.lowercase()
-        val tags = mutableListOf<String>()
-        val allKeywords = mapOf(
-            "receipt" to receiptKeywords,
-            "invoice" to invoiceKeywords,
-            "id" to idDocumentKeywords,
-            "contract" to contractKeywords,
-            "medical" to medicalKeywords
-        )
-        for ((label, keywords) in allKeywords) {
-            if (keywords.count { lower.contains(it) } >= 1) tags.add(label)
-        }
-        return tags.distinct()
+        return classificationRules
+            .filter { rule -> rule.keywords.count { lower.contains(it) } >= 1 }
+            .map { it.label }
+            .distinct()
     }
 }
 
-object DocumentNamer {
-    fun suggest(ocrText: String, category: DocumentCategory, dateMillis: Long): String? {
+object DocumentNamer : NamingService {
+
+    override fun suggest(ocrText: String, category: DocumentCategory, dateMillis: Long): String? {
         if (ocrText.isBlank()) return null
         val dateStr = formatDate(dateMillis)
         val excerpt = extractMeaningfulExcerpt(ocrText)
@@ -79,18 +87,21 @@ object DocumentNamer {
         }
     }
 
-    private fun extractMeaningfulExcerpt(text: String): String? {
-        val lines = text.lines().map { it.trim() }.filter { it.length in 3..40 }
-        return lines.firstOrNull { line ->
-            line.any { it.isLetter() } &&
-                !line.all { it.isDigit() || it.isWhitespace() || it == '/' || it == '-' }
-        }?.take(30)?.trimEnd()
-    }
+    private fun extractMeaningfulExcerpt(text: String): String? =
+        text.lines()
+            .map { it.trim() }
+            .filter { it.length in 3..40 }
+            .firstOrNull { line ->
+                line.any { it.isLetter() } &&
+                    !line.all { it.isDigit() || it.isWhitespace() || it == '/' || it == '-' }
+            }?.take(30)?.trimEnd()
 
     private fun formatDate(millis: Long): String {
         val secs = millis / 1000
         val days = secs / 86400
-        val epoch = 719162L
+        // Days from proleptic Gregorian epoch (March 1, 0000) to Unix epoch (Jan 1, 1970).
+        // Correct Hinnant constant; using 719162 (off by 306) caused a wrong year.
+        val epoch = 719468L
         val z = days + epoch
         val era = (if (z >= 0) z else z - 146096) / 146097
         val doe = z - era * 146097

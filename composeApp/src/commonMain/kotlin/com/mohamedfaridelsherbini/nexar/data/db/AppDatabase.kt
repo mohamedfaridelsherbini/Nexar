@@ -5,10 +5,15 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 
-@Database(entities = [DocumentEntity::class], version = 2, exportSchema = false)
+@Database(
+    entities = [DocumentEntity::class, DocumentFtsEntity::class],
+    version = 4,
+    exportSchema = false
+)
 @ConstructedBy(AppDatabaseConstructor::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun documentDao(): DocumentDao
+    abstract fun documentFtsDao(): DocumentFtsDao
 }
 
 // The Room compiler generates the `actual` implementations.

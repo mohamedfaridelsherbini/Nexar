@@ -5,6 +5,7 @@ import android.net.Uri
 import androidx.documentfile.provider.DocumentFile
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import com.mohamedfaridelsherbini.nexar.domain.repository.StorageRepository
+import com.mohamedfaridelsherbini.nexar.widget.NexarWidgetProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,6 +49,7 @@ class AndroidStorageRepository(private val context: Context) : StorageRepository
             val outputStream: OutputStream? = context.contentResolver.openOutputStream(file.uri)
             if (inputStream != null && outputStream != null) {
                 inputStream.use { input -> outputStream.use { output -> input.copyTo(output) } }
+                NexarWidgetProvider.notifyUpdate(context)
                 true
             } else {
                 false

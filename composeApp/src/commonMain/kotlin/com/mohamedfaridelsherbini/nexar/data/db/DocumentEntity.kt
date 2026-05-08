@@ -18,7 +18,11 @@ data class DocumentEntity(
     val category: String = "Other",
     val tagsJson: String = "[]",
     val isExportedToStorage: Boolean = false,
-    val ocrProcessed: Boolean = false
+    val ocrProcessed: Boolean = false,
+    val isStarred: Boolean = false,
+    val extractedAmount: String? = null,
+    val extractedDate: String? = null,
+    val duplicateOfId: String? = null
 ) {
     fun toDomain() = ScannedDocument(
         id = id,
@@ -30,7 +34,11 @@ data class DocumentEntity(
         category = runCatching { DocumentCategory.valueOf(category) }.getOrDefault(DocumentCategory.Other),
         tags = runCatching { Json.decodeFromString<List<String>>(tagsJson) }.getOrDefault(emptyList()),
         isExportedToStorage = isExportedToStorage,
-        ocrProcessed = ocrProcessed
+        ocrProcessed = ocrProcessed,
+        isStarred = isStarred,
+        extractedAmount = extractedAmount,
+        extractedDate = extractedDate,
+        duplicateOfId = duplicateOfId
     )
 
     companion object {
@@ -44,7 +52,11 @@ data class DocumentEntity(
             category = doc.category.name,
             tagsJson = Json.encodeToString(doc.tags),
             isExportedToStorage = doc.isExportedToStorage,
-            ocrProcessed = doc.ocrProcessed
+            ocrProcessed = doc.ocrProcessed,
+            isStarred = doc.isStarred,
+            extractedAmount = doc.extractedAmount,
+            extractedDate = doc.extractedDate,
+            duplicateOfId = doc.duplicateOfId
         )
     }
 }

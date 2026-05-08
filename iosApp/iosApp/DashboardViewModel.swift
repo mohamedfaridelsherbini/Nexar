@@ -10,6 +10,7 @@ struct PreviewItem: Identifiable {
 enum DocumentListFilter: String, CaseIterable {
     case all
     case needsExport
+    case starred
     case receipt
     case invoice
     case idDocument
@@ -20,6 +21,7 @@ enum DocumentListFilter: String, CaseIterable {
         switch self {
         case .all:         return "All"
         case .needsExport: return "Needs export"
+        case .starred:     return "⭐ Starred"
         case .receipt:     return "Receipts"
         case .invoice:     return "Invoices"
         case .idDocument:  return "IDs"
@@ -40,14 +42,23 @@ enum DocumentListFilter: String, CaseIterable {
     }
 }
 
+enum DocumentSortOrder: String, CaseIterable {
+    case newest   = "Newest first"
+    case oldest   = "Oldest first"
+    case nameAsc  = "Name A→Z"
+    case category = "Category"
+}
+
 @MainActor
 final class DashboardViewModel: ObservableObject {
     @Published private(set) var documents: [ScannedDocument] = []
     @Published private(set) var storageFolderName: String?
     @Published var searchText = ""
     @Published var activeFilter: DocumentListFilter = .all
+    @Published var sortOrder: DocumentSortOrder = .newest
     @Published var previewItem: PreviewItem?
     @Published var errorMessage: String?
+    @Published var batchExportResult: (success: Int, failed: Int)? = nil
 
     private let store: DocumentStore
 
@@ -69,6 +80,8 @@ final class DashboardViewModel: ObservableObject {
             byFilter = documents
         case .needsExport:
             byFilter = documents.filter { !$0.isExportedToStorage }
+        case .starred:
+            byFilter = documents.filter { $0.isStarred }
         default:
             if let cat = activeFilter.category {
                 byFilter = documents.filter { $0.category == cat }
@@ -77,13 +90,19 @@ final class DashboardViewModel: ObservableObject {
             }
         }
 
-        guard !query.isEmpty else { return byFilter }
-        return byFilter.filter { doc in
-            doc.name.lowercased().contains(query) ||
-            doc.ocrText.lowercased().contains(query) ||
-            doc.category.rawValue.lowercased().contains(query) ||
-            doc.tags.contains { $0.lowercased().contains(query) }
+        let filtered: [ScannedDocument]
+        if query.isEmpty {
+            filtered = byFilter
+        } else {
+            filtered = byFilter.filter { doc in
+                doc.name.lowercased().contains(query) ||
+                doc.ocrText.lowercased().contains(query) ||
+                doc.category.rawValue.lowercased().contains(query) ||
+                doc.tags.contains { $0.lowercased().contains(query) }
+            }
         }
+
+        return filtered.sorted(by: sortOrder)
     }
 
     func refresh() async {
@@ -100,6 +119,7 @@ final class DashboardViewModel: ObservableObject {
             do {
                 let document = try await store.addDocumentScan(images: images)
                 documents.insert(document, at: 0)
+                triggerSuccessHaptic()
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -122,12 +142,29 @@ final class DashboardViewModel: ObservableObject {
         }
     }
 
-    func deleteDocuments(at offsets: IndexSet) {
-        let items = offsets.map { filteredDocuments[$0] }
+    func deleteDocument(_ document: ScannedDocument) {
         Task {
             do {
-                for item in items { try await store.deleteDocument(item) }
-                documents.removeAll { doc in items.contains(doc) }
+                try await store.deleteDocument(document)
+                documents.removeAll { $0.id == document.id }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    func deleteDocuments(at offsets: IndexSet) {
+        let items = offsets.map { filteredDocuments[$0] }
+        for item in items { deleteDocument(item) }
+    }
+
+    func toggleStar(_ document: ScannedDocument) {
+        Task {
+            do {
+                try await store.toggleStar(document)
+                if let index = documents.firstIndex(where: { $0.id == document.id }) {
+                    documents[index].isStarred.toggle()
+                }
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -161,6 +198,42 @@ final class DashboardViewModel: ObservableObject {
                 if let index = documents.firstIndex(where: { $0.id == document.id }) {
                     documents[index].isExportedToStorage = true
                 }
+                triggerSuccessHaptic()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    func batchExport() {
+        let unexported = documents.filter { !$0.isExportedToStorage }
+        guard !unexported.isEmpty else { return }
+        Task {
+            var success = 0
+            var failed = 0
+            for doc in unexported {
+                do {
+                    try await store.exportDocument(doc)
+                    if let index = documents.firstIndex(where: { $0.id == doc.id }) {
+                        documents[index].isExportedToStorage = true
+                    }
+                    success += 1
+                } catch {
+                    failed += 1
+                }
+            }
+            batchExportResult = (success: success, failed: failed)
+            if success > 0 { triggerSuccessHaptic() }
+        }
+    }
+
+    func updateDocument(_ document: ScannedDocument) {
+        Task {
+            do {
+                try await store.updateDocument(document)
+                if let index = documents.firstIndex(where: { $0.id == document.id }) {
+                    documents[index] = document
+                }
             } catch {
                 errorMessage = error.localizedDescription
             }
@@ -176,4 +249,22 @@ final class DashboardViewModel: ObservableObject {
             }
         }
     }
+}
+
+private extension Array where Element == ScannedDocument {
+    func sorted(by order: DocumentSortOrder) -> [ScannedDocument] {
+        switch order {
+        case .newest:   return sorted { $0.createdAt > $1.createdAt }
+        case .oldest:   return sorted { $0.createdAt < $1.createdAt }
+        case .nameAsc:  return sorted { $0.name.lowercased() < $1.name.lowercased() }
+        case .category: return sorted { $0.category.rawValue < $1.category.rawValue }
+        }
+    }
+}
+
+// MARK: - Haptics
+private func triggerSuccessHaptic() {
+    let generator = UINotificationFeedbackGenerator()
+    generator.prepare()
+    generator.notificationOccurred(.success)
 }

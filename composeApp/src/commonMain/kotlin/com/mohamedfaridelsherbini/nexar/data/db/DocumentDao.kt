@@ -17,6 +17,9 @@ interface DocumentDao {
     @Delete
     suspend fun deleteDocument(document: DocumentEntity)
 
+    @Query("SELECT * FROM documents WHERE id = :id")
+    suspend fun getDocumentById(id: String): DocumentEntity?
+
     @Query("UPDATE documents SET name = :newName WHERE id = :id")
     suspend fun renameDocument(id: String, newName: String)
 
@@ -25,4 +28,25 @@ interface DocumentDao {
 
     @Query("UPDATE documents SET isExportedToStorage = 1 WHERE id = :id")
     suspend fun markExported(id: String)
+
+    /**
+     * FTS4 JOIN search — Room tracks both tables so this Flow re-emits on any write.
+     * The [query] must already be in FTS MATCH syntax (e.g. `"invoice* jan*"`).
+     */
+    @Query("""
+        SELECT d.* FROM documents d
+        INNER JOIN documents_fts fts ON d.id = fts.documentId
+        WHERE documents_fts MATCH :query
+        ORDER BY d.dateMillis DESC
+    """)
+    fun searchDocuments(query: String): Flow<List<DocumentEntity>>
+}
+
+@Dao
+interface DocumentFtsDao {
+    @Insert
+    suspend fun insert(entity: DocumentFtsEntity)
+
+    @Query("DELETE FROM documents_fts WHERE documentId = :id")
+    suspend fun deleteById(id: String)
 }

@@ -77,9 +77,27 @@ actor DocumentStore {
         document.tags = tags
         document.ocrProcessed = true
 
+        // Extract additional intelligence
+        let extractedAmount = DocumentExtractor.extractAmount(from: ocrText)
+        let extractedDate = DocumentExtractor.extractDate(from: ocrText)
+        document.extractedAmount = extractedAmount
+        document.extractedDate = extractedDate
+
         var documents = try loadDocuments()
+
+        // Duplicate detection via Jaccard similarity
+        let duplicateId = DuplicateDetector.findDuplicate(newDoc: document, in: documents)
+        document.duplicateOfId = duplicateId
+
         documents.insert(document, at: 0)
         try saveDocuments(documents)
+
+        // Index in Spotlight
+        SpotlightIndexer.shared.index(document)
+
+        // Update widget shared data
+        WidgetDataProvider.update(unexportedCount: documents.filter { !$0.isExportedToStorage }.count,
+                                   lastScanName: document.name)
 
         return document
     }
@@ -89,12 +107,29 @@ actor DocumentStore {
         guard let index = documents.firstIndex(where: { $0.id == id }) else { return }
         documents[index].name = newName
         try saveDocuments(documents)
+        SpotlightIndexer.shared.index(documents[index])
+    }
+
+    func toggleStar(_ document: ScannedDocument) throws {
+        var documents = try loadDocuments()
+        guard let index = documents.firstIndex(where: { $0.id == document.id }) else { return }
+        documents[index].isStarred.toggle()
+        try saveDocuments(documents)
+    }
+
+    func updateDocument(_ document: ScannedDocument) throws {
+        var documents = try loadDocuments()
+        guard let index = documents.firstIndex(where: { $0.id == document.id }) else { return }
+        documents[index] = document
+        try saveDocuments(documents)
+        SpotlightIndexer.shared.index(document)
     }
 
     func deleteDocument(_ document: ScannedDocument) throws {
         var documents = try loadDocuments()
         documents.removeAll { $0.id == document.id }
         try saveDocuments(documents)
+        SpotlightIndexer.shared.deindex(document.id)
 
         let scanDirectory = imagesDirectory.appendingPathComponent(document.id, isDirectory: true)
         if fileManager.fileExists(atPath: scanDirectory.path) {
@@ -154,6 +189,9 @@ actor DocumentStore {
         if let index = documents.firstIndex(where: { $0.id == document.id }) {
             documents[index].isExportedToStorage = true
             try saveDocuments(documents)
+            let unexportedCount = documents.filter { !$0.isExportedToStorage }.count
+            WidgetDataProvider.update(unexportedCount: unexportedCount,
+                                       lastScanName: documents[index].name)
         }
     }
 

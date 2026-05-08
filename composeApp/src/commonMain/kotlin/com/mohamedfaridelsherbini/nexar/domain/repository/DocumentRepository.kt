@@ -10,4 +10,9 @@ interface DocumentRepository {
     suspend fun renameDocument(id: String, newName: String)
     suspend fun deleteDocument(document: ScannedDocument)
     suspend fun markExported(id: String)
+    /**
+     * Full-text search backed by the FTS4 index. [ftsQuery] must already be in
+     * Room MATCH syntax — see [SearchDocumentsUseCase.sanitizeFtsQuery].
+     */
+    fun searchDocuments(ftsQuery: String): Flow<List<ScannedDocument>>
 }

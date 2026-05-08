@@ -11,6 +11,8 @@ struct ContentView: View {
     @State private var selectedDocument: ScannedDocument?
     @State private var folderName = ""
     @State private var renameText = ""
+    @State private var ocrSheetDocument: ScannedDocument? = nil
+    @State private var detailDocument: ScannedDocument? = nil
 
     var body: some View {
         NavigationStack {
@@ -19,7 +21,6 @@ struct ContentView: View {
 
                 ScrollView {
                     VStack(spacing: 18) {
-                        // Title stack — matches pen's "Dashboard Title" + "Dashboard Subtitle"
                         VStack(alignment: .leading, spacing: 3) {
                             Text("Documents")
                                 .font(.system(size: 34, weight: .bold))
@@ -31,7 +32,6 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 8)
 
-                        // Storage status card — warning state when no folder
                         NexarLocalStatusCard(
                             scanCount: viewModel.filteredDocuments.count,
                             availableStorage: "2.4 GB",
@@ -39,7 +39,6 @@ struct ContentView: View {
                             onConfigureTap: { showsFolderImporter = true }
                         )
 
-                        // Search input
                         HStack(spacing: 10) {
                             Image(systemName: "magnifyingglass")
                                 .font(.system(size: 18))
@@ -57,7 +56,6 @@ struct ContentView: View {
                                 .stroke(NexarColor.borderSubtle, lineWidth: 1)
                         )
 
-                        // Quick filters
                         HStack {
                             NexarQuickFilters(
                                 selected: $viewModel.activeFilter,
@@ -66,9 +64,7 @@ struct ContentView: View {
                             Spacer()
                         }
 
-                        // Recent documents surface
                         VStack(spacing: 12) {
-                            // List header
                             HStack {
                                 Text("Recent scans")
                                     .font(.system(size: 18, weight: .bold))
@@ -89,9 +85,7 @@ struct ContentView: View {
                                     NexarDocumentRow(
                                         document: document,
                                         canExport: viewModel.storageFolderName != nil,
-                                        onPreview: {
-                                            viewModel.openPreview(for: document)
-                                        },
+                                        onPreview: { viewModel.openPreview(for: document) },
                                         onExport: {
                                             if viewModel.storageFolderName != nil {
                                                 viewModel.exportDocument(document)
@@ -103,8 +97,38 @@ struct ContentView: View {
                                             selectedDocument = document
                                             renameText = document.name
                                             showsRenameAlert = true
-                                        }
+                                        },
+                                        onStar: { viewModel.toggleStar(document) },
+                                        onOcrView: { ocrSheetDocument = document },
+                                        onShare: {
+                                            shareDocument(document)
+                                        },
+                                        onDetail: { detailDocument = document }
                                     )
+                                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                        Button(role: .destructive) {
+                                            viewModel.deleteDocument(document)
+                                        } label: {
+                                            Label("Delete", systemImage: "trash")
+                                        }
+                                    }
+                                    .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                        if viewModel.storageFolderName != nil {
+                                            Button {
+                                                viewModel.exportDocument(document)
+                                            } label: {
+                                                Label("Export", systemImage: "arrow.up.doc")
+                                            }
+                                            .tint(NexarColor.accentPrimary)
+                                        }
+                                        Button {
+                                            viewModel.toggleStar(document)
+                                        } label: {
+                                            Label(document.isStarred ? "Unstar" : "Star",
+                                                  systemImage: document.isStarred ? "star.slash" : "star.fill")
+                                        }
+                                        .tint(.yellow)
+                                    }
                                 }
                             }
                         }
@@ -119,7 +143,6 @@ struct ContentView: View {
                     .padding(.bottom, 140)
                 }
 
-                // Dominant scan FAB — pen spec: h=64, r=32, teal, shadow y=8 blur=20 navy 20%
                 VStack {
                     Spacer()
                     Button {
@@ -143,19 +166,69 @@ struct ContentView: View {
                 .ignoresSafeArea(.keyboard)
             }
             .toolbar {
-                // Profile / settings button — pen: 44×44 circle, foreground-primary icon
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showsFolderImporter = true
+                ToolbarItem(placement: .topBarLeading) {
+                    Menu {
+                        ForEach(DocumentSortOrder.allCases, id: \.self) { order in
+                            Button {
+                                viewModel.sortOrder = order
+                            } label: {
+                                if viewModel.sortOrder == order {
+                                    Label(order.rawValue, systemImage: "checkmark")
+                                } else {
+                                    Text(order.rawValue)
+                                }
+                            }
+                        }
                     } label: {
                         ZStack {
                             Circle()
                                 .fill(NexarColor.surfaceSecondary)
                                 .frame(width: 40, height: 40)
                                 .overlay(Circle().stroke(NexarColor.borderSubtle, lineWidth: 1))
-                            Image(systemName: "person")
-                                .font(.system(size: 17, weight: .medium))
+                            Image(systemName: "arrow.up.arrow.down")
+                                .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(NexarColor.foregroundPrimary)
+                        }
+                    }
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    HStack(spacing: 8) {
+                        if viewModel.storageFolderName != nil && viewModel.needsExportCount > 0 {
+                            Button {
+                                viewModel.batchExport()
+                            } label: {
+                                ZStack(alignment: .topTrailing) {
+                                    Circle()
+                                        .fill(NexarColor.surfaceSecondary)
+                                        .frame(width: 40, height: 40)
+                                        .overlay(Circle().stroke(NexarColor.borderSubtle, lineWidth: 1))
+                                    Image(systemName: "icloud.and.arrow.up")
+                                        .font(.system(size: 15, weight: .medium))
+                                        .foregroundStyle(NexarColor.accentPrimary)
+                                        .frame(width: 40, height: 40)
+                                    Text("\(viewModel.needsExportCount)")
+                                        .font(.system(size: 9, weight: .bold))
+                                        .foregroundStyle(.white)
+                                        .padding(3)
+                                        .background(NexarColor.warning, in: Circle())
+                                        .offset(x: 2, y: -2)
+                                }
+                            }
+                        }
+
+                        Button {
+                            showsFolderImporter = true
+                        } label: {
+                            ZStack {
+                                Circle()
+                                    .fill(NexarColor.surfaceSecondary)
+                                    .frame(width: 40, height: 40)
+                                    .overlay(Circle().stroke(NexarColor.borderSubtle, lineWidth: 1))
+                                Image(systemName: "person")
+                                    .font(.system(size: 17, weight: .medium))
+                                    .foregroundStyle(NexarColor.foregroundPrimary)
+                            }
                         }
                     }
                 }
@@ -174,6 +247,18 @@ struct ContentView: View {
         }
         .sheet(item: $viewModel.previewItem) { item in
             QuickLookPreview(url: item.url)
+        }
+        .sheet(item: $ocrSheetDocument) { doc in
+            OcrTextSheet(document: doc)
+        }
+        .sheet(item: $detailDocument) { doc in
+            DocumentDetailView(
+                document: doc,
+                canExport: viewModel.storageFolderName != nil,
+                onSave: { updated in viewModel.updateDocument(updated) },
+                onExport: { viewModel.exportDocument($0) },
+                onShare: { shareDocument($0) }
+            )
         }
         .fileImporter(
             isPresented: $showsFolderImporter,
@@ -209,6 +294,20 @@ struct ContentView: View {
             Text("Document scanning requires a real iPhone or iPad.")
         }
         .alert(
+            "Batch Export Complete",
+            isPresented: Binding(
+                get: { viewModel.batchExportResult != nil },
+                set: { if !$0 { viewModel.batchExportResult = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { viewModel.batchExportResult = nil }
+        } message: {
+            if let result = viewModel.batchExportResult {
+                Text("\(result.success) document\(result.success != 1 ? "s" : "") exported" +
+                     (result.failed > 0 ? ", \(result.failed) failed." : "."))
+            }
+        }
+        .alert(
             "Error",
             isPresented: Binding(
                 get: { viewModel.errorMessage != nil },
@@ -227,6 +326,19 @@ struct ContentView: View {
 #else
         showsScanner = true
 #endif
+    }
+
+    private func shareDocument(_ document: ScannedDocument) {
+        let pdfURL = FileManager.default
+            .urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("Nexar/pdfs/\(document.pdfFileName)")
+        guard FileManager.default.fileExists(atPath: pdfURL.path) else { return }
+
+        let activityVC = UIActivityViewController(activityItems: [pdfURL], applicationActivities: nil)
+        if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+           let rootVC = windowScene.windows.first?.rootViewController {
+            rootVC.present(activityVC, animated: true)
+        }
     }
 }
 

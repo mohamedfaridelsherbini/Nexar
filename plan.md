@@ -71,17 +71,41 @@ Living backlog of enhancements across Android (Compose Multiplatform), iOS (Swif
 
 ---
 
-## 7. Suggested implementation order
+## 7. Missing features & prioritized backlog
 
-1. **Settings + notification toggles** — small scope, immediate user control.  
-2. **Search UI enhancements** — builds on existing FTS.  
-3. **Deep links + quick actions** — complements widgets and notification taps.  
-4. **Document merge** — common request; medium effort.  
-5. **Cloud sync** — largest effort; requires product decisions (provider, conflicts, privacy).
+Detailed gaps beyond sections 1–6. Update **Status** when shipping (`todo` → `in progress` → `done`). Use **Owner** for whoever owns delivery; **Target** is a milestone placeholder (`near`, `mid`, `long`, or quarter).
+
+| Priority | Feature | Notes | Status | Owner | Effort | Target |
+|:---:|---|---|---|:---:|:---:|:---:|
+| **P1** | **Trash / restore** | Soft-delete with restore window (e.g. 30 days); optional permanent purge. | todo | TBD | M | near |
+| **P1** | **Bulk actions** | Multi-select export, delete, tag/category, share. | todo | TBD | M | near |
+| **P1** | **Permissions health** | Camera / files / notifications status + deep links to OS settings. | todo | TBD | S | near |
+| **P1** | **Backup & recovery UX** | Explicit backup/restore story before full cloud sync. | todo | TBD | M | near |
+| **P2** | **OCR language settings** | User-selectable languages / fallback for Vision & ML Kit. | todo | TBD | M | mid |
+| **P2** | **Sync conflict resolution UX** | Keep-local / keep-remote / merge flows when sync lands. | todo | TBD | L | mid |
+| **P2** | **Storage cleanup center** | Large files, duplicate cleanup helpers, cache controls. | todo | TBD | M | mid |
+| **P2** | **Offline queue visibility** | Pending exports / retries surfaced clearly. | todo | TBD | M | mid |
+| **P3** | **Document security controls** | Lock/hide per doc, redact before share, optional watermark. | todo | TBD | L | long |
+| **P3** | **Release readiness** | In-app feedback, changelog / what’s new, optional feature flags. | todo | TBD | M | mid |
+
+**Effort:** `S` = small (under ~3 days), `M` = medium (~3–10 days), `L` = large (multi-week or multi-sprint).
 
 ---
 
-## 8. Already in place (reference)
+## 8. Suggested implementation order
+
+1. **Settings + notification toggles** — small scope, immediate user control.  
+2. **Permissions health (P1)** — reduces setup friction early.  
+3. **Trash + bulk actions (P1)** — confidence + scale for growing libraries.  
+4. **Search UI enhancements** — builds on existing FTS.  
+5. **Backup & recovery UX (P1)** — safety narrative before heavy sync.  
+6. **Deep links + quick actions** — complements widgets and notification taps.  
+7. **Document merge** — common request; medium effort.  
+8. **Cloud sync** — largest effort; requires product decisions (provider, conflicts, privacy).
+
+---
+
+## 9. Already in place (reference)
 
 - OCR pipeline, categories, FTS search, Room + migrations, Koin DI, MVVM-oriented structure.  
 - Error/loading states (KMP + iOS), PDF preview, onboarding flow, export reminders + duplicate alerts (with ongoing notification polish).  

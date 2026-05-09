@@ -51,6 +51,25 @@ Update both when you ship or reprioritize.
 
 ---
 
+## Missing features (aligned with `plan.md`)
+
+Same **P1 / P2 / P3** items as section 7 in [`plan.md`](plan.md). Horizon placement below; copy Status / Owner / Effort / Target from `plan.md` when executing.
+
+| Priority | Feature | Horizon | Status | Owner | Effort | Target |
+|:---:|---|---|:---:|:---:|:---:|:---:|
+| **P1** | Trash / restore | Near | todo | TBD | M | near |
+| **P1** | Bulk actions | Near | todo | TBD | M | near |
+| **P1** | Permissions health | Near | todo | TBD | S | near |
+| **P1** | Backup & recovery UX | Near | todo | TBD | M | near |
+| **P2** | OCR language settings | Mid | todo | TBD | M | mid |
+| **P2** | Sync conflict resolution UX | Mid | todo | TBD | L | mid |
+| **P2** | Storage cleanup center | Mid | todo | TBD | M | mid |
+| **P2** | Offline queue visibility | Mid | todo | TBD | M | mid |
+| **P3** | Document security controls | Long | todo | TBD | L | long |
+| **P3** | Release readiness | Mid | todo | TBD | M | mid |
+
+---
+
 ## Success metrics (examples)
 
 Track only what you will act on; keep PII out of analytics.
@@ -70,4 +89,8 @@ Track only what you will act on; keep PII out of analytics.
 
 ---
 
-*Last aligned with `plan.md` — keep sections in sync when priorities shift.*
+**Maintenance:** When an item ships, set Status to `done` in **both** this table and [`plan.md`](plan.md) section 7, and add a line under **Already in place** in `plan.md`.
+
+---
+
+*Last aligned with `plan.md` section 7 — update both files together when priorities shift.*

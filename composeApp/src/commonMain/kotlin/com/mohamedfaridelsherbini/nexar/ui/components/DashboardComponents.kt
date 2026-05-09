@@ -485,21 +485,21 @@ fun SwipeableDocumentCard(
     onShareClick: (() -> Unit)?,
     onDetailClick: (() -> Unit)?
 ) {
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            when (value) {
-                SwipeToDismissBoxValue.EndToStart -> {
-                    onDeleteClick()
-                    false
-                }
-                SwipeToDismissBoxValue.StartToEnd -> {
-                    if (exportEnabled) onExportClick() else onConfigureExportClick()
-                    false
-                }
-                SwipeToDismissBoxValue.Settled -> false
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.EndToStart -> {
+                onDeleteClick()
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
+            SwipeToDismissBoxValue.StartToEnd -> {
+                if (exportEnabled) onExportClick() else onConfigureExportClick()
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+            SwipeToDismissBoxValue.Settled -> {}
         }
-    )
+    }
 
     SwipeToDismissBox(
         state = dismissState,

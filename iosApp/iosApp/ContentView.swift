@@ -129,7 +129,7 @@ struct ContentView: View {
 
     var body: some View {
         NavigationStack {
-            ZStack {
+            ZStack(alignment: .bottom) {
                 NexarColor.surfacePrimary.ignoresSafeArea()
 
                 ScrollView {
@@ -250,44 +250,41 @@ struct ContentView: View {
                 .animation(.easeInOut(duration: 0.25), value: viewModel.isProcessing)
                 .animation(.easeInOut(duration: 0.25), value: viewModel.isBatchExporting)
 
-                // Floating scan button
-                VStack {
-                    Spacer()
-                    ZStack {
-                        // Attention pulse ring — only when library is empty
-                        if viewModel.filteredDocuments.isEmpty && !viewModel.isProcessing {
-                            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                                .fill(NexarColor.accentPrimary.opacity(fabPulse ? 0 : 0.35))
-                                .scaleEffect(fabPulse ? 1.14 : 1.0)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 64)
-                                .padding(.horizontal, 28)
-                                .animation(
-                                    .easeInOut(duration: 1.4).repeatForever(autoreverses: true),
-                                    value: fabPulse
-                                )
-                        }
-                        Button {
-                            if !viewModel.isProcessing { startScanning() }
-                        } label: {
-                            scanButtonLabel(isProcessing: viewModel.isProcessing)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 64)
-                                .background(
-                                    NexarColor.accentPrimary.opacity(viewModel.isProcessing ? 0.7 : 1.0),
-                                    in: RoundedRectangle(cornerRadius: 32, style: .continuous)
-                                )
-                                .foregroundStyle(NexarColor.onAccent)
-                                .shadow(color: Color(hex: "0F172A").opacity(0.20), radius: 20, x: 0, y: 8)
-                        }
-                        .disabled(viewModel.isProcessing)
-                        .padding(.horizontal, 28)
-                        .padding(.bottom, 34)
-                    } // ZStack
+                // Floating scan button container
+                ZStack {
+                    // Attention pulse ring — only when library is empty
+                    if viewModel.filteredDocuments.isEmpty && !viewModel.isProcessing {
+                        RoundedRectangle(cornerRadius: 32, style: .continuous)
+                            .fill(NexarColor.accentPrimary.opacity(fabPulse ? 0 : 0.35))
+                            .scaleEffect(fabPulse ? 1.14 : 1.0)
+                            .frame(height: 64)
+                            .animation(
+                                .easeInOut(duration: 1.4).repeatForever(autoreverses: true),
+                                value: fabPulse
+                            )
+                    }
+
+                    Button {
+                        if !viewModel.isProcessing { startScanning() }
+                    } label: {
+                        scanButtonLabel(isProcessing: viewModel.isProcessing)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 64)
+                            .background(
+                                NexarColor.accentPrimary.opacity(viewModel.isProcessing ? 0.7 : 1.0),
+                                in: RoundedRectangle(cornerRadius: 32, style: .continuous)
+                            )
+                            .foregroundStyle(NexarColor.onAccent)
+                    }
+                    .buttonStyle(NexarFABStyle())
+                    .disabled(viewModel.isProcessing)
+                    .contentShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
                 }
+                .padding(.horizontal, 28)
+                .padding(.bottom, 34)
                 .ignoresSafeArea(.keyboard)
-                .onAppear { fabPulse = true }
             }
+            .onAppear { fabPulse = true }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Menu {
@@ -313,6 +310,7 @@ struct ContentView: View {
                                 .foregroundStyle(NexarColor.foregroundPrimary)
                         }
                     }
+                    .buttonStyle(NexarToolbarButtonStyle())
                     .accessibilityLabel("Sort documents")
                 }
 
@@ -324,6 +322,7 @@ struct ContentView: View {
                             } label: {
                                 batchExportButtonContent(isExporting: viewModel.isBatchExporting, count: viewModel.needsExportCount)
                             }
+                            .buttonStyle(NexarToolbarButtonStyle())
                             .disabled(viewModel.isBatchExporting)
                             .accessibilityLabel("Export \(viewModel.needsExportCount) documents to storage")
                         }
@@ -333,6 +332,7 @@ struct ContentView: View {
                         } label: {
                             storageSettingsButtonContent()
                         }
+                        .buttonStyle(NexarToolbarButtonStyle())
                         .accessibilityLabel("Storage settings")
                     }
                 }

@@ -452,3 +452,28 @@ struct NexarEmptyState: View {
         .frame(maxWidth: .infinity)
     }
 }
+
+// MARK: - Custom Button Styles
+
+struct NexarFABStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: configuration.isPressed)
+            .shadow(
+                color: NexarColor.accentPrimary.opacity(configuration.isPressed ? 0.05 : 0.20),
+                radius: configuration.isPressed ? 10 : 18,
+                x: 0,
+                y: configuration.isPressed ? 4 : 8
+            )
+    }
+}
+
+struct NexarToolbarButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.92 : 1.0)
+            .opacity(configuration.isPressed ? 0.8 : 1.0)
+            .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
+    }
+}

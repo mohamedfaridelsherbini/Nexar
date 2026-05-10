@@ -302,7 +302,9 @@ private fun TopBarIconButton(
     onClick: () -> Unit,
 ) {
     Surface(
-        modifier = Modifier.size(40.dp),
+        modifier = Modifier
+            .size(40.dp)
+            .clip(CircleShape),
         shape = CircleShape,
         color = MaterialTheme.colorScheme.surface,
         border = BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle),
@@ -413,9 +415,12 @@ fun NexarSearchInput(
                 tint = NexarExtraTheme.colors.foregroundSecondary,
                 modifier =
                     Modifier
-                        .size(16.dp)
+                        .size(24.dp)
+                        .padding(4.dp)
                         .clip(CircleShape)
-                        .clickable { onValueChange("") },
+                        .clickable(
+                            onClick = { onValueChange("") },
+                        ),
             )
         }
     }
@@ -1104,8 +1109,9 @@ fun NexarFAB(
                 Modifier
                     .fillMaxWidth()
                     .height(64.dp)
+                    .clip(RoundedCornerShape(32.dp))
                     .shadow(
-                        elevation = 20.dp,
+                        elevation = 12.dp,
                         shape = RoundedCornerShape(32.dp),
                         ambientColor = Color(0x330F172A),
                         spotColor = Color(0x330F172A),

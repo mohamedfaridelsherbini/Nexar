@@ -53,9 +53,9 @@ data class DashboardUiState(
     val ocrSheetDocumentId: String? = null,
     /** True until the first emission from the document repository arrives. */
     val isLoadingDocuments: Boolean = true,
-    /** Id of the document currently being OCR-processed. Null when idle. */
+    /** ID of the document currently being OCR-processed. Null when idle. */
     val processingDocumentId: String? = null,
-    /** Id of the document currently being exported to storage. Null when idle. */
+    /** ID of the document currently being exported to storage. Null when idle. */
     val exportingDocumentId: String? = null,
     /** True while a batch export is running. */
     val isBatchExporting: Boolean = false,

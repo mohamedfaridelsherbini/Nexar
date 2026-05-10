@@ -29,7 +29,11 @@ actual fun ScannerBridge(
                     val document =
                         ScannedDocument(
                             id = java.util.UUID.randomUUID().toString(),
-                            name = "Scan ${java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(java.util.Date())}",
+                            name =
+                                "Scan ${
+                                    java.text.SimpleDateFormat("yyyy-MM-dd HH:mm", java.util.Locale.US)
+                                        .format(java.util.Date())
+                                }",
                             dateMillis = System.currentTimeMillis(),
                             imageUris = gmsResult.pages?.map { it.imageUri.toString() } ?: emptyList(),
                             pdfUri = gmsResult.pdf?.uri?.toString(),

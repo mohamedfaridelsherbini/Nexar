@@ -24,7 +24,7 @@ Nexar is a streamlined document scanner application. This phase focuses on exten
 ## Implementation Steps
 **Total Duration:** 1h 6m 9s
 
-### Task_1_Infrastructure_UI_Shell: Configure project dependencies for CameraX, ML Kit, and Google Drive API. Implement the Material 3 theme (light/dark) with vibrant colors and setup the main Navigation graph. Create the Local Dashboard UI shell.
+### Task_1_Infrastructure_UI_Shell: Configure project dependencies for CameraX, ML Kit, and Google Drive API. Implement the Material 3 theme (light/dark) with vibrant colors and set up the main Navigation graph. Create the Local Dashboard UI shell.
 - **Status:** COMPLETED
 - **Updates:** Material 3 theme with vibrant colors, Navigation 3 setup, Dashboard UI with FAB, Edge-to-Edge display, and adaptive icon have been implemented. The project builds successfully.
 - **Acceptance Criteria:**
@@ -42,7 +42,7 @@ Nexar is a streamlined document scanner application. This phase focuses on exten
   - App captures and saves cropped document images
 - **Duration:** 2m 1s
 
-### Task_3_PDF_Processing_Management: Implement logic to group multiple scans and generate multi-page PDF documents. Create a local management system to rename and preview these files on the Dashboard.
+### Task_3_PDF_Processing_Management: Implement logic to group multiple scans and generate multipage PDF documents. Create a local management system to rename and preview these files on the Dashboard.
 - **Status:** COMPLETED
 - **Updates:** Implemented Room database for document persistence. Added Rename dialog and Preview functionality using Android Intents. Documents are now managed locally with reactive UI updates.
 - **Acceptance Criteria:**

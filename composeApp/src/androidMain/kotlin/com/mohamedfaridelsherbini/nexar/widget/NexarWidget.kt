@@ -15,6 +15,7 @@ import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.color.ColorProvider
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
@@ -26,12 +27,14 @@ import androidx.glance.layout.width
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.color.ColorProvider
 import com.mohamedfaridelsherbini.nexar.MainActivity
 import com.mohamedfaridelsherbini.nexar.R
 
 class NexarWidget : GlanceAppWidget() {
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
+    override suspend fun provideGlance(
+        context: Context,
+        id: GlanceId,
+    ) {
         provideContent {
             NexarWidgetContent(context)
         }
@@ -45,17 +48,18 @@ class NexarWidget : GlanceAppWidget() {
 
         GlanceTheme {
             Row(
-                modifier = GlanceModifier
-                    .fillMaxSize()
-                    .background(ImageProvider(R.drawable.widget_bg))
-                    .padding(12.dp)
-                    .clickable(actionStartActivity<MainActivity>()),
-                verticalAlignment = Alignment.CenterVertically
+                modifier =
+                    GlanceModifier
+                        .fillMaxSize()
+                        .background(ImageProvider(R.drawable.widget_bg))
+                        .padding(12.dp)
+                        .clickable(actionStartActivity<MainActivity>()),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Image(
                     provider = ImageProvider(R.mipmap.ic_launcher),
                     contentDescription = null,
-                    modifier = GlanceModifier.size(36.dp)
+                    modifier = GlanceModifier.size(36.dp),
                 )
 
                 Spacer(modifier = GlanceModifier.width(10.dp))
@@ -63,28 +67,31 @@ class NexarWidget : GlanceAppWidget() {
                 Column(modifier = GlanceModifier.defaultWeight()) {
                     Text(
                         text = "$pendingCount pending export${if (pendingCount != 1) "s" else ""}",
-                        style = TextStyle(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 15.sp,
-                            color = ColorProvider(day = Color.White, night = Color.White)
-                        )
+                        style =
+                            TextStyle(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 15.sp,
+                                color = ColorProvider(day = Color.White, night = Color.White),
+                            ),
                     )
                     Text(
                         text = lastScan,
-                        style = TextStyle(
-                            fontSize = 12.sp,
-                            color = ColorProvider(day = Color(0xFF94A3B8), night = Color(0xFF94A3B8))
-                        ),
-                        maxLines = 1
+                        style =
+                            TextStyle(
+                                fontSize = 12.sp,
+                                color = ColorProvider(day = Color(0xFF94A3B8), night = Color(0xFF94A3B8)),
+                            ),
+                        maxLines = 1,
                     )
                 }
 
                 Image(
                     provider = ImageProvider(android.R.drawable.ic_menu_camera),
                     contentDescription = "Scan",
-                    modifier = GlanceModifier
-                        .size(36.dp)
-                        .clickable(actionStartActivity<MainActivity>())
+                    modifier =
+                        GlanceModifier
+                            .size(36.dp)
+                            .clickable(actionStartActivity<MainActivity>()),
                 )
             }
         }

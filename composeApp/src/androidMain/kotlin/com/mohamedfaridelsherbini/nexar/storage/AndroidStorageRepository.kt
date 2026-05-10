@@ -1,7 +1,6 @@
 package com.mohamedfaridelsherbini.nexar.storage
 
 import android.content.Context
-import android.net.Uri
 import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
@@ -47,7 +46,7 @@ class AndroidStorageRepository(private val context: Context) : StorageRepository
         val file = yearFolder.createFile("application/pdf", fileName) ?: return false
 
         return try {
-            val inputStream: InputStream? = context.contentResolver.openInputStream(Uri.parse(sourceUri))
+            val inputStream: InputStream? = context.contentResolver.openInputStream(sourceUri.toUri())
             val outputStream: OutputStream? = context.contentResolver.openOutputStream(file.uri)
             if (inputStream != null && outputStream != null) {
                 inputStream.use { input -> outputStream.use { output -> input.copyTo(output) } }

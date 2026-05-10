@@ -111,7 +111,7 @@ private fun ImageViewerDialog(
             UIKitView(
                 factory = {
                     val imageView = UIImageView()
-                    // Multi-page image-only documents are rare (scanner normally creates a PDF).
+                    // Multipage image-only documents are rare (scanner normally creates a PDF).
                     // Show the first page; UIKitView fills the available modifier space.
                     val path = imageUriStrings.firstOrNull()?.toLocalFilePath()
                     if (path != null) {

@@ -13,7 +13,7 @@ data class ScannedDocument(
     val category: DocumentCategory = DocumentCategory.Other,
     val tags: List<String> = emptyList(),
     val isExportedToStorage: Boolean = false,
-    /** True when OCR has been attempted (whether or not text was found). */
+    /** True when OCR has been attempted (whether text was found). */
     val ocrProcessed: Boolean = false,
     val isStarred: Boolean = false,
     val extractedAmount: String? = null,

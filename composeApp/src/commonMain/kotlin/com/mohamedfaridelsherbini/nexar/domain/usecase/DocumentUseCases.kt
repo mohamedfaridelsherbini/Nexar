@@ -65,7 +65,7 @@ class ToggleStarUseCase(
 }
 
 /**
- * Wraps FTS4-backed search with query sanitisation.
+ * Wraps FTS4-backed search with query sanitization.
  *
  * Converts a raw user query (e.g. `"inv jan"`) into an FTS MATCH prefix query
  * (`"inv* jan*"`), removing characters that would otherwise break the MATCH parser.

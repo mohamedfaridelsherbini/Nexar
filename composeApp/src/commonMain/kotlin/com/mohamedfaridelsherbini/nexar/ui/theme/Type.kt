@@ -12,7 +12,7 @@ val NexarTypography =
         headlineLarge =
             TextStyle(
                 fontFamily = FontFamily.Default,
-                // Should be Inter if available
+                // Should be interred if available
                 fontWeight = FontWeight.ExtraBold,
                 fontSize = 48.sp,
                 lineHeight = 52.sp,

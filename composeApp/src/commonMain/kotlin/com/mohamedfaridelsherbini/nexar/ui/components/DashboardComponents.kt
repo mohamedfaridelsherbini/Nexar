@@ -301,23 +301,24 @@ private fun TopBarIconButton(
     contentDescription: String,
     onClick: () -> Unit,
 ) {
-    Surface(
-        modifier = Modifier
-            .size(40.dp)
-            .clip(CircleShape),
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surface,
-        border = BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle),
-        onClick = onClick,
+    // Fixed circle + clip before clickable so press/ripple stays inside the 40dp bounds.
+    // Avoid Surface(onClick): its interaction/elevation layer can shift relative to the shape on CMP/iOS.
+    Box(
+        modifier =
+            Modifier
+                .size(40.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surface, CircleShape)
+                .border(BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle), CircleShape)
+                .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
     ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDescription,
-                tint = NexarExtraTheme.colors.foregroundSecondary,
-                modifier = Modifier.size(18.dp),
-            )
-        }
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = NexarExtraTheme.colors.foregroundSecondary,
+            modifier = Modifier.size(18.dp),
+        )
     }
 }
 
@@ -1103,42 +1104,47 @@ fun NexarFAB(
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = ringAlpha)),
             )
         }
-        Button(
-            onClick = onClick,
+        // Shadow on a non-interactive wrapper so press/scale on the button does not move the shadow.
+        Box(
             modifier =
                 Modifier
                     .fillMaxWidth()
                     .height(64.dp)
-                    .clip(RoundedCornerShape(32.dp))
                     .shadow(
                         elevation = 12.dp,
                         shape = RoundedCornerShape(32.dp),
                         ambientColor = Color(0x330F172A),
                         spotColor = Color(0x330F172A),
-                    ),
-            shape = RoundedCornerShape(32.dp),
-            colors =
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = NexarOnAccent,
-                ),
-            elevation =
-                ButtonDefaults.buttonElevation(
-                    defaultElevation = 0.dp,
-                    pressedElevation = 0.dp,
-                ),
+                    )
+                    .clip(RoundedCornerShape(32.dp)),
         ) {
-            Icon(
-                imageVector = Icons.Default.QrCodeScanner,
-                contentDescription = null,
-                modifier = Modifier.size(22.dp),
-            )
-            Spacer(Modifier.width(10.dp))
-            Text(
-                text = "Scan document",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
+            Button(
+                onClick = onClick,
+                modifier = Modifier.fillMaxSize(),
+                shape = RoundedCornerShape(32.dp),
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = NexarOnAccent,
+                    ),
+                elevation =
+                    ButtonDefaults.buttonElevation(
+                        defaultElevation = 0.dp,
+                        pressedElevation = 0.dp,
+                    ),
+            ) {
+                Icon(
+                    imageVector = Icons.Default.QrCodeScanner,
+                    contentDescription = null,
+                    modifier = Modifier.size(22.dp),
+                )
+                Spacer(Modifier.width(10.dp))
+                Text(
+                    text = "Scan document",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
         }
     } // closes Box(contentAlignment = Alignment.Center)
 }

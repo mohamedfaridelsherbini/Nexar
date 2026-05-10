@@ -62,6 +62,9 @@ kotlin {
 
             // WorkManager for background notifications
             implementation(libs.androidx.work.runtime.ktx)
+
+            // Glance for Home Screen Widgets
+            implementation(libs.androidx.glance.appwidget)
         }
         iosMain.dependencies {
             implementation(libs.androidx.room.runtime)
@@ -110,6 +113,11 @@ kotlin {
 android {
     namespace = "com.mohamedfaridelsherbini.nexar"
     compileSdk = libs.versions.android.compileSdk.get().toInt()
+
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+    }
 
     buildFeatures {
         buildConfig = true

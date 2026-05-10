@@ -16,5 +16,9 @@ ij_kotlin_name_count_to_use_star_import = 999
 ij_kotlin_name_count_to_use_star_import_for_members = 999
 
 # ktlint configuration
-ktlint_standard_property-naming = disabled
+# Disabled to allow PascalCase for @Composable functions (Compose standard).
+# Tracked for future refinement: https://github.com/pinterest/ktlint/issues/2448
 ktlint_standard_function-naming = disabled
+# Disabled to allow leading underscores for private backing properties (Kotlin standard).
+# Tracked for future refinement: https://github.com/pinterest/ktlint/issues/1608
+ktlint_standard_property-naming = disabled

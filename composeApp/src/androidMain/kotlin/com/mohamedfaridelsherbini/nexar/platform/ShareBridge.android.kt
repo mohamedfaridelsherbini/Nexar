@@ -4,7 +4,6 @@ package com.mohamedfaridelsherbini.nexar.platform
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import androidx.core.net.toUri
 
 private var shareContext: Context? = null

@@ -7,7 +7,7 @@ import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import com.mohamedfaridelsherbini.nexar.domain.repository.StorageRepository
-import com.mohamedfaridelsherbini.nexar.widget.NexarWidgetProvider
+import com.mohamedfaridelsherbini.nexar.widget.NexarWidgetReceiver
 import java.io.InputStream
 import java.io.OutputStream
 import java.text.SimpleDateFormat
@@ -51,7 +51,7 @@ class AndroidStorageRepository(private val context: Context) : StorageRepository
             val outputStream: OutputStream? = context.contentResolver.openOutputStream(file.uri)
             if (inputStream != null && outputStream != null) {
                 inputStream.use { input -> outputStream.use { output -> input.copyTo(output) } }
-                NexarWidgetProvider.notifyUpdate(context)
+                NexarWidgetReceiver.notifyUpdate(context)
                 true
             } else {
                 false

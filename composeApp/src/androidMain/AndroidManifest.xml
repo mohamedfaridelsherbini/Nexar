@@ -22,7 +22,7 @@
         </activity>
 
         <receiver
-            android:name=".widget.NexarWidgetProvider"
+            android:name=".widget.NexarWidgetReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

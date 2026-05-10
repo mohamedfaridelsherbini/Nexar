@@ -6,7 +6,7 @@ This is a Kotlin Multiplatform project targeting Android, iOS.
   - Other folders are for Kotlin code that will be compiled for only the platform indicated in the folder name.
     For example, if you want to use Apple’s CoreCrypto for the iOS part of your Kotlin app,
     the [iosMain](./composeApp/src/iosMain/kotlin) folder would be the right place for such calls.
-    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/jvmMain/kotlin)
+    Similarly, if you want to edit the Desktop (JVM) specific part, the [jvmMain](./composeApp/src/^jvmMain/kotlin)
     folder is the appropriate location.
 
 * [/iosApp](./iosApp/iosApp) contains iOS applications. Even if you’re sharing your UI with Compose Multiplatform,

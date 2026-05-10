@@ -1,5 +1,6 @@
 package com.mohamedfaridelsherbini.nexar
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -43,7 +44,6 @@ import com.mohamedfaridelsherbini.nexar.ui.theme.NexarTheme
 import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
-import kotlinx.serialization.modules.subclass
 
 @Composable
 fun App() {
@@ -292,7 +292,7 @@ private fun NexarDialogField(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(12.dp),
         border =
-            androidx.compose.foundation.BorderStroke(
+            BorderStroke(
                 1.dp,
                 NexarExtraTheme.colors.borderSubtle,
             ),
@@ -325,7 +325,6 @@ private fun NexarDialogField(
 }
 
 @Composable
-@Suppress("FunctionName")
 expect fun ScannerBridge(
     onResult: (ScannedDocument) -> Unit,
     onCancel: () -> Unit,

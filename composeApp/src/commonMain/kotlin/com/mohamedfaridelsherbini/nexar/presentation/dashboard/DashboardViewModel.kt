@@ -1,5 +1,3 @@
-@file:Suppress("PropertyNaming", "ktlint:standard:property-naming")
-
 package com.mohamedfaridelsherbini.nexar.presentation.dashboard
 
 import androidx.lifecycle.ViewModel

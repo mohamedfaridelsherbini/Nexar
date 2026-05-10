@@ -1292,11 +1292,3 @@ fun BatchExportingBanner() {
         )
     }
 }
-
-// ─── Utility ──────────────────────────────────────────────────────────────────
-
-@Composable
-fun borderStroke(
-    width: Dp,
-    color: Color,
-) = BorderStroke(width, color)

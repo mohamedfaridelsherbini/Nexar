@@ -23,22 +23,16 @@ final class SpotlightIndexer {
         )
         item.expirationDate = .distantFuture
 
-        CSSearchableIndex.default().indexSearchableItems([item]) { error in
-            if let error { print("[Spotlight] index error: \(error.localizedDescription)") }
-        }
+        CSSearchableIndex.default().indexSearchableItems([item]) { _ in }
     }
 
     func deindex(_ documentId: String) {
         CSSearchableIndex.default().deleteSearchableItems(
             withIdentifiers: [documentId]
-        ) { error in
-            if let error { print("[Spotlight] deindex error: \(error.localizedDescription)") }
-        }
+        ) { _ in }
     }
 
     func deindexAll() {
-        CSSearchableIndex.default().deleteAllSearchableItems { error in
-            if let error { print("[Spotlight] deindexAll error: \(error.localizedDescription)") }
-        }
+        CSSearchableIndex.default().deleteAllSearchableItems { _ in }
     }
 }

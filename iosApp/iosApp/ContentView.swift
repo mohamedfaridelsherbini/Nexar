@@ -11,8 +11,8 @@ struct ContentView: View {
     @State private var selectedDocument: ScannedDocument?
     @State private var folderName = ""
     @State private var renameText = ""
-    @State private var ocrSheetDocument: ScannedDocument? = nil
-    @State private var detailDocument: ScannedDocument? = nil
+    @State private var ocrSheetDocument: ScannedDocument?
+    @State private var detailDocument: ScannedDocument?
     @State private var fabPulse = false
 
     @ViewBuilder

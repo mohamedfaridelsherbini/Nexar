@@ -40,14 +40,14 @@ private extension UIColor {
         let hex = hexString.trimmingCharacters(in: .alphanumerics.inverted)
         var int: UInt64 = 0
         Scanner(string: hex).scanHexInt64(&int)
-        let a, r, g, b: UInt64
+        let alpha, red, green, blue: UInt64
         switch hex.count {
-        case 3:  (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
-        case 6:  (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
-        case 8:  (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
-        default: (a, r, g, b) = (255, 200, 200, 200)
+        case 3:  (alpha, red, green, blue) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6:  (alpha, red, green, blue) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8:  (alpha, red, green, blue) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default: (alpha, red, green, blue) = (255, 200, 200, 200)
         }
-        self.init(red: Double(r)/255, green: Double(g)/255, blue: Double(b)/255, alpha: Double(a)/255)
+        self.init(red: Double(red)/255, green: Double(green)/255, blue: Double(blue)/255, alpha: Double(alpha)/255)
     }
 }
 
@@ -69,33 +69,33 @@ struct NexarDocumentMark: View {
 
     var body: some View {
         Canvas { ctx, sz in
-            let u = min(sz.width, sz.height) / 188.0
+            let unit = min(sz.width, sz.height) / 188.0
 
             // Document sheet (76×112, r=12)
-            let sheetRect = CGRect(x: 56*u, y: 38*u, width: 76*u, height: 112*u)
-            let sheetPath = Path(roundedRect: sheetRect, cornerRadius: 12*u)
+            let sheetRect = CGRect(x: 56 * unit, y: 38 * unit, width: 76 * unit, height: 112 * unit)
+            let sheetPath = Path(roundedRect: sheetRect, cornerRadius: 12 * unit)
             ctx.fill(sheetPath, with: .color(sheetColor))
 
             // Fold triangle (top-right corner of sheet)
             var fold = Path()
-            fold.move(to: CGPoint(x: 112*u, y: 38*u))
-            fold.addLine(to: CGPoint(x: 132*u, y: 38*u))
-            fold.addLine(to: CGPoint(x: 132*u, y: 58*u))
+            fold.move(to: CGPoint(x: 112 * unit, y: 38 * unit))
+            fold.addLine(to: CGPoint(x: 132 * unit, y: 38 * unit))
+            fold.addLine(to: CGPoint(x: 132 * unit, y: 58 * unit))
             fold.closeSubpath()
             ctx.fill(fold, with: .color(foldColor))
 
             // Scan beam (100×12, r=6)
-            let beam = Path(roundedRect: CGRect(x: 44*u, y: 88*u, width: 100*u, height: 12*u), cornerRadius: 6*u)
+            let beam = Path(roundedRect: CGRect(x: 44 * unit, y: 88 * unit, width: 100 * unit, height: 12 * unit), cornerRadius: 6 * unit)
             ctx.fill(beam, with: .color(accentColor))
 
             // Top-left bracket – horizontal
-            ctx.fill(Path(roundedRect: CGRect(x: 30*u, y: 30*u, width: 36*u, height: 5*u), cornerRadius: 3*u), with: .color(accentColor))
+            ctx.fill(Path(roundedRect: CGRect(x: 30 * unit, y: 30 * unit, width: 36 * unit, height: 5 * unit), cornerRadius: 3 * unit), with: .color(accentColor))
             // Top-left bracket – vertical
-            ctx.fill(Path(roundedRect: CGRect(x: 30*u, y: 30*u, width: 5*u, height: 36*u), cornerRadius: 3*u), with: .color(accentColor))
+            ctx.fill(Path(roundedRect: CGRect(x: 30 * unit, y: 30 * unit, width: 5 * unit, height: 36 * unit), cornerRadius: 3 * unit), with: .color(accentColor))
             // Bottom-right bracket – horizontal
-            ctx.fill(Path(roundedRect: CGRect(x: 122*u, y: 153*u, width: 36*u, height: 5*u), cornerRadius: 3*u), with: .color(accentColor))
+            ctx.fill(Path(roundedRect: CGRect(x: 122 * unit, y: 153 * unit, width: 36 * unit, height: 5 * unit), cornerRadius: 3 * unit), with: .color(accentColor))
             // Bottom-right bracket – vertical
-            ctx.fill(Path(roundedRect: CGRect(x: 153*u, y: 122*u, width: 5*u, height: 36*u), cornerRadius: 3*u), with: .color(accentColor))
+            ctx.fill(Path(roundedRect: CGRect(x: 153 * unit, y: 122 * unit, width: 5 * unit, height: 36 * unit), cornerRadius: 3 * unit), with: .color(accentColor))
         }
         .frame(width: width, height: height)
         .background(fieldColor)
@@ -184,10 +184,10 @@ struct NexarDocumentRow: View {
     let onPreview: () -> Void
     let onExport: () -> Void
     let onRename: () -> Void
-    var onStar: (() -> Void)? = nil
-    var onOcrView: (() -> Void)? = nil
-    var onShare: (() -> Void)? = nil
-    var onDetail: (() -> Void)? = nil
+    var onStar: (() -> Void)?
+    var onOcrView: (() -> Void)?
+    var onShare: (() -> Void)?
+    var onDetail: (() -> Void)?
 
     private var statusLabel: String {
         if isExporting { return "Exporting…" }
@@ -421,12 +421,13 @@ struct NexarEmptyState: View {
         if let cat = filter.category { return "No \(cat.folderName.lowercased()) found" }
         return "No documents yet"
     }
-    private var body_: String {
+
+    private var bodyText: String {
         if !searchText.isEmpty { return "OCR text, category, and document name are all searched." }
-        if filter == .needsExport { return "All your scans have been exported." }
-        if filter == .starred { return "Tap the star on any document to mark it as a favourite." }
-        if filter.category != nil { return "Scan a document — Nexar will auto-detect the category." }
-        return "Tap Scan document below to capture your first scan."
+        else if filter == .needsExport { return "All your scans have been exported." }
+        else if filter == .starred { return "Tap the star on any document to mark it as a favourite." }
+        else if filter.category != nil { return "Scan a document — Nexar will auto-detect the category." }
+        else { return "Tap Scan document below to capture your first scan." }
     }
 
     var body: some View {
@@ -442,7 +443,7 @@ struct NexarEmptyState: View {
             Text(heading)
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(NexarColor.foregroundPrimary)
-            Text(body_)
+            Text(bodyText)
                 .font(.system(size: 14, weight: .regular))
                 .foregroundStyle(NexarColor.foregroundSecondary)
                 .multilineTextAlignment(.center)

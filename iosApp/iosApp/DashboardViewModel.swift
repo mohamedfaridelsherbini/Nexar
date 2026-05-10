@@ -73,17 +73,17 @@ final class DashboardViewModel: ObservableObject {
     /// True while a new scan is being processed (OCR + classification in flight).
     @Published private(set) var isProcessing = false
     /// Set to the document ID while a single-document export is running.
-    @Published private(set) var exportingDocumentId: String? = nil
+    @Published private(set) var exportingDocumentId: String?
     /// True while a batch export is in progress.
     @Published private(set) var isBatchExporting = false
 
     // MARK: Error state (typed, mirrors NexarError.kt)
 
-    @Published var error: NexarError? = nil
+    @Published var error: NexarError?
 
     // MARK: Batch export result
 
-    @Published var batchExportResult: (success: Int, failed: Int)? = nil
+    @Published var batchExportResult: (success: Int, failed: Int)?
 
     // MARK: Dependencies
 

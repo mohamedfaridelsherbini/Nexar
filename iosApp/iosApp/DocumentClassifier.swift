@@ -44,8 +44,8 @@ enum DocumentNamer {
         let dateStr = formatDate(date)
         let excerpt = extractExcerpt(from: ocrText)
         let prefix = category.rawValue
-        if let e = excerpt {
-            return "\(prefix) - \(e) - \(dateStr)"
+        if let excerptValue = excerpt {
+            return "\(prefix) - \(excerptValue) - \(dateStr)"
         }
         return "\(prefix) - \(dateStr)"
     }
@@ -61,8 +61,8 @@ enum DocumentNamer {
     }
 
     private static func formatDate(_ date: Date) -> String {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        return f.string(from: date)
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        return formatter.string(from: date)
     }
 }

@@ -179,8 +179,10 @@ actor DocumentStore: DocumentRepository {
             documents[index].isExportedToStorage = true
             try saveDocuments(documents)
             let unexportedCount = documents.filter { !$0.isExportedToStorage }.count
-            WidgetDataProvider.update(unexportedCount: unexportedCount,
-                                      lastScanName: documents[index].name)
+            WidgetDataProvider.update(
+                unexportedCount: unexportedCount,
+                lastScanName: documents[index].name
+            )
         }
     }
 
@@ -197,11 +199,15 @@ actor DocumentStore: DocumentRepository {
     // MARK: - Private: directories
 
     private var baseDirectory: URL {
-        let applicationSupport = try! fileManager.url(
-            for: .applicationSupportDirectory, in: .userDomainMask,
-            appropriateFor: nil, create: true
-        )
-        return applicationSupport.appendingPathComponent("Nexar", isDirectory: true)
+        do {
+            let applicationSupport = try fileManager.url(
+                for: .applicationSupportDirectory, in: .userDomainMask,
+                appropriateFor: nil, create: true
+            )
+            return applicationSupport.appendingPathComponent("Nexar", isDirectory: true)
+        } catch {
+            fatalError("Failed to resolve base directory: \(error)")
+        }
     }
 
     private var imagesDirectory: URL { baseDirectory.appendingPathComponent("images", isDirectory: true) }

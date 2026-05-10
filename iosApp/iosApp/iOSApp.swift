@@ -2,7 +2,7 @@ import SwiftUI
 import UserNotifications
 
 @main
-struct iOSApp: App {
+struct IOSApp: App {
     @AppStorage("onboarding_complete") private var onboardingComplete = false
 
     init() {

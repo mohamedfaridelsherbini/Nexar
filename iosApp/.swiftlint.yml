@@ -1,0 +1,17 @@
+disabled_rules:
+  - trailing_whitespace
+opt_in_rules:
+  - explicit_init
+  - closure_spacing
+  - empty_count
+  - vertical_whitespace_closing_braces
+
+line_length: 140
+
+identifier_name:
+  min_length: 2
+
+excluded:
+  - Pods
+  - .build
+  - DerivedData

@@ -32,9 +32,9 @@ struct ScannedDocument: Identifiable, Codable, Hashable {
     var tags: [String] = []
     var ocrProcessed: Bool = false
     var isStarred: Bool = false
-    var extractedAmount: String? = nil
-    var extractedDate: String? = nil
-    var duplicateOfId: String? = nil
+    var extractedAmount: String?
+    var extractedDate: String?
+    var duplicateOfId: String?
 
     var pageCount: Int { pageFileNames.count }
 }

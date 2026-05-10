@@ -19,12 +19,14 @@ private let onboardingPages: [OnboardingPage] = [
     .init(id: 1,
           systemImage: "camera.viewfinder",
           title: "Scan & Read",
-          body: "Point your camera at any receipt, invoice, contract, ID, or medical record. Nexar's OCR engine reads the text and suggests a smart name instantly.",
+          body: "Point your camera at any receipt, invoice, contract, ID, or medical record. " +
+                "Nexar's OCR engine reads the text and suggests a smart name instantly.",
           actionLabel: "Next"),
     .init(id: 2,
           systemImage: "rectangle.3.group",
           title: "Auto-Organized",
-          body: "Every scan is automatically classified, tagged, and enriched with extracted amounts and dates. No manual sorting — ever.",
+          body: "Every scan is automatically classified, tagged, and enriched with extracted amounts and dates. " +
+                "No manual sorting — ever.",
           actionLabel: "Next"),
     .init(id: 3,
           systemImage: "folder.badge.plus",
@@ -63,9 +65,9 @@ struct OnboardingView: View {
 
             // Page content with swipe / animated transition
             TabView(selection: $currentPage) {
-                ForEach(onboardingPages) { p in
-                    PageContent(page: p)
-                        .tag(p.id)
+                ForEach(onboardingPages) { onboardingPage in
+                    PageContent(page: onboardingPage)
+                        .tag(onboardingPage.id)
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))

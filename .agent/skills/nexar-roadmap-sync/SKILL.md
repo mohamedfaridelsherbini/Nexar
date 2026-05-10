@@ -1,10 +1,9 @@
 ---
 name: nexar-roadmap-sync
 description: >-
-  Keeps plan.md and future-plan.md aligned when updating the Nexar product
-  roadmap, priorities (P1/P2/P3), status, owner, effort, and target milestones.
-  Use when the user edits roadmap files, future-plan.md, plan.md, or backlog
-  tables in this repository.
+  Keeps ROADMAP.md aligned when updating the Nexar product roadmap,
+  priorities (P1/P2/P3), status, owner, effort, and target milestones.
+  Use when the user edits the backlog tables in this repository.
 ---
 
 # Nexar roadmap sync
@@ -15,17 +14,16 @@ Canonical per **[Extend Agent Mode with skills](https://developer.android.com/st
 
 ## Source of truth
 
-- **`plan.md`** — full tables, section 7 prioritized backlog with Status / Owner / Effort / Target.
-- **`future-plan.md`** — horizons (near / mid / long) + the same priority rows; must mirror section 7.
+- **`ROADMAP.md`** — The unified source for strategic horizons and technical backlogs.
 
 ## Rules
 
-1. When adding, removing, or re-prioritizing a feature: update **both** files in the same change.
-2. When an item ships: set **Status** to `done` in both tables; append a one-line bullet under **Already in place** in `plan.md` only (section 9).
-3. Keep **Priority** (`P1` / `P2` / `P3`) identical across files; **Horizon** in `future-plan.md` should match **Target** (`near` / `mid` / `long`).
+1. When adding, removing, or re-prioritizing a feature: update the tables in **`ROADMAP.md`**.
+2. When an item ships: set **Status** to `done` in the Prioritized Backlog and append a bullet under **Already in place** (Section 5).
+3. Keep **Priority** (`P1` / `P2` / `P3`) aligned with the product goals.
 4. Use `TBD` for Owner until assigned; replace with a person or team name when known.
 
-## Effort legend (plan.md)
+## Effort legend
 
 - `S` — small (under ~3 days)
 - `M` — medium (~3–10 days)
@@ -34,8 +32,7 @@ Canonical per **[Extend Agent Mode with skills](https://developer.android.com/st
 ## Agent checklist
 
 - [ ] Tables render as valid Markdown (pipe alignment optional).
-- [ ] Cross-links at top of each file still point to the sibling file.
-- [ ] Suggested implementation order in `plan.md` reflects current priorities.
+- [ ] Section 5 (Already in place) reflects the latest technical achievements.
 
 ## Where this skill lives
 

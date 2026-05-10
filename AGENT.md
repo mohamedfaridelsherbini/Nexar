@@ -1,6 +1,6 @@
 # AGENT.md
 
-Guidance for AI coding agents working in this repository. Read this first, then `DESIGN.md` and `Nexar.pen` before touching UI.
+Guidance for AI coding agents working in this repository. Read this first, then `ROADMAP.md`, `DESIGN.md`, and `Nexar.pen` before touching UI.
 
 ## Project snapshot
 

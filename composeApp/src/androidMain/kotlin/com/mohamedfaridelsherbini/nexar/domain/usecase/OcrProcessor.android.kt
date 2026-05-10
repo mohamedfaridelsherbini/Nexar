@@ -3,26 +3,29 @@
 package com.mohamedfaridelsherbini.nexar.domain.usecase
 
 import android.content.Context
-import android.net.Uri
+import androidx.core.net.toUri
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import kotlin.coroutines.resume
 import kotlinx.coroutines.suspendCancellableCoroutine
-import androidx.core.net.toUri
 
-import org.koin.core.context.GlobalContext
+private lateinit var ocrContext: Context
 
-actual fun createOcrProcessor(): OcrProcessor = AndroidOcrProcessor(GlobalContext.get().get())
+fun initOcr(context: Context) {
+    ocrContext = context.applicationContext
+}
 
-private class AndroidOcrProcessor(private val context: Context) : OcrProcessor {
+actual fun createOcrProcessor(): OcrProcessor = AndroidOcrProcessor()
+
+private class AndroidOcrProcessor : OcrProcessor {
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
     override suspend fun extractText(imageUris: List<String>): String {
         val parts =
             imageUris.mapNotNull { uriStr ->
                 runCatching {
-                    val image = InputImage.fromFilePath(context, uriStr.toUri())
+                    val image = InputImage.fromFilePath(ocrContext, uriStr.toUri())
                     suspendCancellableCoroutine<String> { cont ->
                         recognizer.process(image)
                             .addOnSuccessListener { result -> cont.resume(result.text) }

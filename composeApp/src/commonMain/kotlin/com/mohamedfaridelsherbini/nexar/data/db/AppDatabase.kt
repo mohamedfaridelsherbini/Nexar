@@ -7,7 +7,7 @@ import androidx.room.RoomDatabaseConstructor
 
 @Database(
     entities = [DocumentEntity::class, DocumentFtsEntity::class],
-    version = 5,
+    version = 6,
     exportSchema = false,
 )
 @ConstructedBy(AppDatabaseConstructor::class)

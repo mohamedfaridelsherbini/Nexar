@@ -7,6 +7,13 @@ complexity:
     active: true
     threshold: 600
 
+# Global excludes for generated code
+build:
+  # Exclude generated code from analysis
+  excludes:
+    - '**/build/**'
+    - '**/generated/**'
+
 style:
   active: true
   MagicNumber:
@@ -31,6 +38,11 @@ naming:
   FunctionNaming:
     active: true
     functionPattern: '[a-zA-Z][a-zA-Z0-9]*'
+    excludeClassPattern: '.*'
+  VariableNaming:
+    active: true
+    variablePattern: '[a-z][A-Za-z0-9]*'
+    # Exclude backing properties from naming rules
     excludeClassPattern: '.*'
 
 formatting:

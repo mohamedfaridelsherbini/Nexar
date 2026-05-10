@@ -26,6 +26,7 @@ subprojects {
         baseline = file("$rootDir/config/detekt/baseline.xml")
         buildUponDefaultConfig = true
         allRules = false
+        autoCorrect = true
     }
 
     configure<org.jlleitschuh.gradle.ktlint.KtlintExtension> {

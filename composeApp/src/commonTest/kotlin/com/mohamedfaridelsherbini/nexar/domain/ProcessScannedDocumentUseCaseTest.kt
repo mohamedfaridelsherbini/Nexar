@@ -29,7 +29,7 @@ class ProcessScannedDocumentUseCaseTest {
         category: DocumentCategory = DocumentCategory.Invoice,
         tags: List<String> = listOf("invoice"),
         suggestedName: String? = "Invoice - 2024",
-        amount: String? = "\$42.50",
+        amount: String? = "$42.50",
         date: String? = "2024-03-15",
         duplicateId: String? = null,
         repo: FakeDocumentRepository = FakeDocumentRepository(),
@@ -92,7 +92,7 @@ class ProcessScannedDocumentUseCaseTest {
                 buildUseCase(
                     category = DocumentCategory.Invoice,
                     suggestedName = "Invoice - 2024",
-                    amount = "\$99.00",
+                    amount = "$99.00",
                     date = "2024-01-01",
                 )
             val original = rawDoc()
@@ -103,7 +103,7 @@ class ProcessScannedDocumentUseCaseTest {
             assertNotNull(updated)
             assertEquals(DocumentCategory.Invoice, updated.category)
             assertEquals("Invoice - 2024", updated.name)
-            assertEquals("\$99.00", updated.extractedAmount)
+            assertEquals("$99.00", updated.extractedAmount)
             assertEquals("2024-01-01", updated.extractedDate)
             assertTrue(updated.ocrProcessed)
         }

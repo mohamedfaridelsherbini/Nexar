@@ -12,7 +12,7 @@ class DocumentExtractorTest {
 
     @Test
     fun `extractAmount returns dollar amount`() {
-        assertNotNull(DocumentExtractor.extractAmount("Total: \$42.50"))
+        assertNotNull(DocumentExtractor.extractAmount("Total: $42.50"))
     }
 
     @Test
@@ -22,7 +22,7 @@ class DocumentExtractorTest {
 
     @Test
     fun `extractAmount returns the largest amount`() {
-        val text = "Subtotal \$10.00\nTax \$2.50\nTotal \$42.50"
+        val text = "Subtotal $10.00\nTax $2.50\nTotal $42.50"
         val amount = DocumentExtractor.extractAmount(text)
         assertNotNull(amount)
         assertTrue(amount.contains("42"), "Expected largest amount (42.50), got: $amount")

@@ -84,7 +84,7 @@ class DashboardViewModelTest {
                 ocrProcessor = ocr,
                 classifier = FakeClassifierService(DocumentCategory.Invoice),
                 namer = FakeNamingService("Invoice - 2024"),
-                extractor = FakeExtractionService("\$10.00", "2024-01-01"),
+                extractor = FakeExtractionService("$10.00", "2024-01-01"),
                 duplicateDetector = FakeDuplicateDetectionService(null),
                 documentRepository = docRepo,
             )

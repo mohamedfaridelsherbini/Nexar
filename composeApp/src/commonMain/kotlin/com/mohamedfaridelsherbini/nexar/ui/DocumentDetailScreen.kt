@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import com.mohamedfaridelsherbini.nexar.domain.model.DocumentCategory
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import com.mohamedfaridelsherbini.nexar.ui.components.CategoryPill
+import com.mohamedfaridelsherbini.nexar.ui.components.NexarCircleIconButton
 import com.mohamedfaridelsherbini.nexar.ui.components.NexarLogo
 import com.mohamedfaridelsherbini.nexar.ui.theme.NexarExtraTheme
 
@@ -93,9 +94,11 @@ fun DocumentDetailScreen(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
+                    NexarCircleIconButton(
+                        icon = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        onClick = onBack,
+                    )
                     Text(
                         "Document Detail",
                         style = MaterialTheme.typography.titleMedium,

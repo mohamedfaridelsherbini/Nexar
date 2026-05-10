@@ -2,6 +2,15 @@ package com.mohamedfaridelsherbini.nexar
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material3.Icon
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,25 +38,40 @@ import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
 import androidx.savedstate.serialization.SavedStateConfiguration
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
+import com.mohamedfaridelsherbini.nexar.domain.usecase.AppTheme
 import com.mohamedfaridelsherbini.nexar.navigation.Dashboard
 import com.mohamedfaridelsherbini.nexar.navigation.DocumentDetail
 import com.mohamedfaridelsherbini.nexar.navigation.Scanner
+import com.mohamedfaridelsherbini.nexar.navigation.Settings
 import com.mohamedfaridelsherbini.nexar.platform.NexarPrefs
 import com.mohamedfaridelsherbini.nexar.platform.sharePdf
 import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardViewModel
+import com.mohamedfaridelsherbini.nexar.presentation.settings.SettingsViewModel
 import com.mohamedfaridelsherbini.nexar.storage.StoragePickerBridge
 import com.mohamedfaridelsherbini.nexar.ui.DashboardScreen
 import com.mohamedfaridelsherbini.nexar.ui.DocumentDetailScreen
 import com.mohamedfaridelsherbini.nexar.ui.OnboardingScreen
+import com.mohamedfaridelsherbini.nexar.ui.SettingsScreen
 import com.mohamedfaridelsherbini.nexar.ui.theme.NexarExtraTheme
 import com.mohamedfaridelsherbini.nexar.ui.theme.NexarTheme
 import org.koin.compose.viewmodel.koinViewModel
+import androidx.compose.foundation.isSystemInDarkTheme
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 
 @Composable
 fun App() {
-    NexarTheme(dynamicColor = false) {
+    val settingsViewModel: SettingsViewModel = koinViewModel()
+    val settingsState by settingsViewModel.uiState.collectAsState()
+
+    val darkTheme =
+        when (settingsState.theme) {
+            AppTheme.Light -> false
+            AppTheme.Dark -> true
+            AppTheme.System -> isSystemInDarkTheme()
+        }
+
+    NexarTheme(darkTheme = darkTheme, dynamicColor = false) {
         var onboardingComplete by remember { mutableStateOf(NexarPrefs.isOnboardingComplete) }
 
         if (!onboardingComplete) {
@@ -68,6 +92,7 @@ fun App() {
                                 subclass(Dashboard::class, Dashboard.serializer())
                                 subclass(Scanner::class, Scanner.serializer())
                                 subclass(DocumentDetail::class, DocumentDetail.serializer())
+                                subclass(Settings::class, Settings.serializer())
                             }
                         }
                 }
@@ -80,6 +105,7 @@ fun App() {
         var documentToPreview by remember { mutableStateOf<ScannedDocument?>(null) }
         var showStoragePicker by remember { mutableStateOf(false) }
         var showCreateFolderDialog by remember { mutableStateOf(false) }
+        var showThemePicker by remember { mutableStateOf(false) }
 
         NavDisplay(
             backStack = backStack,
@@ -93,7 +119,7 @@ fun App() {
                             onScanClick = { backStack.add(Scanner()) },
                             onRenameClick = { documentToRename = it },
                             onDocumentClick = { doc -> documentToPreview = doc },
-                            onSetStorageClick = { showStoragePicker = true },
+                            onSetStorageClick = { backStack.add(Settings) },
                             onSaveToStorageClick = { dashboardViewModel.onSaveDocumentToStorage(it) },
                             onCreateFolderClick = { showCreateFolderDialog = true },
                             onDeleteClick = { dashboardViewModel.onDeleteDocument(it) },
@@ -144,6 +170,16 @@ fun App() {
                             )
                         }
                     }
+                    entry<Settings> {
+                        SettingsScreen(
+                            uiState = settingsState,
+                            onBackClick = { backStack.removeAt(backStack.size - 1) },
+                            onThemeClick = { showThemePicker = true },
+                            onStorageClick = { showStoragePicker = true },
+                            onExportRemindersToggled = { settingsViewModel.onExportRemindersToggled(it) },
+                            onDuplicateAlertsToggled = { settingsViewModel.onDuplicateAlertsToggled(it) },
+                        )
+                    }
                 },
         )
 
@@ -183,6 +219,61 @@ fun App() {
                 },
                 onDismiss = { showCreateFolderDialog = false },
             )
+        }
+
+        if (showThemePicker) {
+            ThemePickerDialog(
+                currentTheme = settingsState.theme,
+                onConfirm = { theme ->
+                    settingsViewModel.onThemeChanged(theme)
+                    showThemePicker = false
+                },
+                onDismiss = { showThemePicker = false }
+            )
+        }
+    }
+}
+
+@Composable
+fun ThemePickerDialog(
+    currentTheme: AppTheme,
+    onConfirm: (AppTheme) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    NexarDialog(
+        title = "Choose theme",
+        confirmLabel = "Close",
+        confirmEnabled = true,
+        onConfirm = onDismiss,
+        onDismiss = onDismiss,
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            AppTheme.entries.forEach { theme ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .clickable { onConfirm(theme) }
+                        .padding(vertical = 12.dp, horizontal = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        theme.label,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = if (theme == currentTheme) FontWeight.Bold else FontWeight.Normal,
+                        color = if (theme == currentTheme) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                    )
+                    if (theme == currentTheme) {
+                        Icon(
+                            androidx.compose.material.icons.Icons.Default.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
         }
     }
 }

@@ -13,6 +13,7 @@ import com.mohamedfaridelsherbini.nexar.domain.usecase.BatchExportUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.CreateFolderUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.DashboardUseCases
 import com.mohamedfaridelsherbini.nexar.domain.usecase.DeleteDocumentUseCase
+import com.mohamedfaridelsherbini.nexar.domain.usecase.GetSettingsUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.MarkExportedUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.ObserveDocumentsUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.ObserveStorageLocationUseCase
@@ -26,6 +27,7 @@ import com.mohamedfaridelsherbini.nexar.domain.usecase.ToggleStarUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.UpdateDocumentUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.createOcrProcessor
 import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardViewModel
+import com.mohamedfaridelsherbini.nexar.presentation.settings.SettingsViewModel
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 
@@ -60,6 +62,9 @@ val commonModule =
         single { SaveDocumentToStorageUseCase(get(), get()) }
         single { BatchExportUseCase(get(), get()) }
         single { CreateFolderUseCase(get()) }
+
+        // ── Settings ──────────────────────────────────────────────────────────────
+        single { GetSettingsUseCase() }
 
         // ── Post-scan intelligence pipeline ───────────────────────────────────────
         single {
@@ -98,6 +103,13 @@ val commonModule =
                 processScannedDocument = get(),
                 analyticsUseCase = get(),
                 searchDocuments = get(),
+            )
+        }
+
+        viewModel {
+            SettingsViewModel(
+                getSettings = get(),
+                observeStorageLocation = get(),
             )
         }
     }

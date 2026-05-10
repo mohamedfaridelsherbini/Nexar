@@ -13,6 +13,7 @@ struct ContentView: View {
     @State private var renameText = ""
     @State private var ocrSheetDocument: ScannedDocument?
     @State private var detailDocument: ScannedDocument?
+    @State private var showsSettings = false
     @State private var fabPulse = false
 
     @ViewBuilder
@@ -251,35 +252,41 @@ struct ContentView: View {
                 .animation(.easeInOut(duration: 0.25), value: viewModel.isBatchExporting)
 
                 // Floating scan button container
-                ZStack {
-                    // Attention pulse ring — only when library is empty
-                    if viewModel.filteredDocuments.isEmpty && !viewModel.isProcessing {
-                        RoundedRectangle(cornerRadius: 32, style: .continuous)
-                            .fill(NexarColor.accentPrimary.opacity(fabPulse ? 0 : 0.35))
-                            .scaleEffect(fabPulse ? 1.14 : 1.0)
-                            .frame(height: 64)
-                            .animation(
-                                .easeInOut(duration: 1.4).repeatForever(autoreverses: true),
-                                value: fabPulse
-                            )
-                    }
+                Button {
+                    if !viewModel.isProcessing { startScanning() }
+                } label: {
+                    let shape = RoundedRectangle(cornerRadius: 32, style: .continuous)
 
-                    Button {
-                        if !viewModel.isProcessing { startScanning() }
-                    } label: {
-                        scanButtonLabel(isProcessing: viewModel.isProcessing)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 64)
-                            .background(
-                                NexarColor.accentPrimary.opacity(viewModel.isProcessing ? 0.7 : 1.0),
-                                in: RoundedRectangle(cornerRadius: 32, style: .continuous)
-                            )
-                            .foregroundStyle(NexarColor.onAccent)
-                    }
-                    .buttonStyle(NexarFABStyle())
-                    .disabled(viewModel.isProcessing)
-                    .contentShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                    scanButtonLabel(isProcessing: viewModel.isProcessing)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 64)
+                        .background {
+                            if viewModel.filteredDocuments.isEmpty && !viewModel.isProcessing {
+                                shape
+                                    .fill(NexarColor.accentPrimary.opacity(fabPulse ? 0 : 0.35))
+                                    .scaleEffect(fabPulse ? 1.14 : 1.0)
+                                    .animation(
+                                        .easeInOut(duration: 1.4).repeatForever(autoreverses: true),
+                                        value: fabPulse
+                                    )
+                            }
+                        }
+                        .background(
+                            NexarColor.accentPrimary.opacity(viewModel.isProcessing ? 0.7 : 1.0),
+                            in: shape
+                        )
+                        .foregroundStyle(NexarColor.onAccent)
+                        .clipShape(shape)
                 }
+                .shadow(
+                    color: NexarColor.accentPrimary.opacity(0.20),
+                    radius: 18,
+                    x: 0,
+                    y: 8
+                )
+                .buttonStyle(NexarFABStyle())
+                .disabled(viewModel.isProcessing)
+                .contentShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
                 .padding(.horizontal, 28)
                 .padding(.bottom, 34)
                 .ignoresSafeArea(.keyboard)
@@ -328,7 +335,7 @@ struct ContentView: View {
                         }
 
                         Button {
-                            showsFolderImporter = true
+                            showsSettings = true
                         } label: {
                             storageSettingsButtonContent()
                         }
@@ -367,6 +374,9 @@ struct ContentView: View {
                 onExport: { viewModel.exportDocument($0) },
                 onShare: { shareDocument($0) }
             )
+        }
+        .sheet(isPresented: $showsSettings) {
+            SettingsView()
         }
         .fileImporter(
             isPresented: $showsFolderImporter,

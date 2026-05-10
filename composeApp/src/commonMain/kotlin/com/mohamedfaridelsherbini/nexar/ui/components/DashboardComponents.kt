@@ -6,6 +6,7 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
@@ -15,6 +16,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,8 +56,6 @@ import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.Badge
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -296,30 +298,65 @@ fun NexarTopBar(
 }
 
 @Composable
-private fun TopBarIconButton(
+fun NexarCircleIconButton(
     icon: ImageVector,
     contentDescription: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surface,
+    iconTint: Color = NexarExtraTheme.colors.foregroundSecondary,
+    borderColor: Color = NexarExtraTheme.colors.borderSubtle,
+    buttonSize: Dp = 40.dp,
+    iconSize: Dp = 18.dp,
 ) {
-    // Fixed circle + clip before clickable so press/ripple stays inside the 40dp bounds.
-    // Avoid Surface(onClick): its interaction/elevation layer can shift relative to the shape on CMP/iOS.
+    // Compose iOS can misplace the default ripple/state layer for small circular click targets.
+    // Drive the pressed state locally and disable the framework indication entirely.
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val resolvedContainerColor by animateColorAsState(
+        targetValue =
+            if (isPressed) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
+            } else {
+                containerColor
+            },
+        animationSpec = tween(durationMillis = 90),
+        label = "nexarCircleIconButtonContainer",
+    )
     Box(
         modifier =
-            Modifier
-                .size(40.dp)
+            modifier
+                .size(buttonSize)
                 .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.surface, CircleShape)
-                .border(BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle), CircleShape)
-                .clickable(onClick = onClick),
+                .background(resolvedContainerColor, CircleShape)
+                .border(BorderStroke(1.dp, borderColor), CircleShape)
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                ),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            tint = NexarExtraTheme.colors.foregroundSecondary,
-            modifier = Modifier.size(18.dp),
+            tint = iconTint,
+            modifier = Modifier.size(iconSize),
         )
     }
+}
+
+@Composable
+private fun TopBarIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+) {
+    NexarCircleIconButton(
+        icon = icon,
+        contentDescription = contentDescription,
+        onClick = onClick,
+    )
 }
 
 // ─── Warning banner ───────────────────────────────────────────────────────────
@@ -1071,6 +1108,18 @@ fun NexarFAB(
     onClick: () -> Unit,
     hasDocuments: Boolean = true,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val containerColor by animateColorAsState(
+        targetValue =
+            if (isPressed) {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.88f)
+            } else {
+                MaterialTheme.colorScheme.primary
+            },
+        animationSpec = tween(durationMillis = 90),
+        label = "nexarFabContainer",
+    )
     val pulse = rememberInfiniteTransition(label = "fab_pulse")
     val ringAlpha by pulse.animateFloat(
         initialValue = 0.35f,
@@ -1092,61 +1141,63 @@ fun NexarFAB(
             ),
         label = "fab_ring_scale",
     )
-    Box(contentAlignment = Alignment.Center) {
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        val buttonShape = RoundedCornerShape(32.dp)
         if (!hasDocuments) {
             Box(
                 modifier =
                     Modifier
-                        .fillMaxWidth()
-                        .height(64.dp)
+                        .fillMaxSize()
                         .scale(ringScale)
-                        .clip(RoundedCornerShape(32.dp))
+                        .clip(buttonShape)
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = ringAlpha)),
             )
         }
-        // Shadow on a non-interactive wrapper so press/scale on the button does not move the shadow.
         Box(
             modifier =
                 Modifier
-                    .fillMaxWidth()
-                    .height(64.dp)
+                    .fillMaxSize()
                     .shadow(
                         elevation = 12.dp,
-                        shape = RoundedCornerShape(32.dp),
+                        shape = buttonShape,
                         ambientColor = Color(0x330F172A),
                         spotColor = Color(0x330F172A),
                     )
-                    .clip(RoundedCornerShape(32.dp)),
+                    .clip(buttonShape)
+                    .background(containerColor)
+                    .clickable(
+                        interactionSource = interactionSource,
+                        indication = null,
+                        onClick = onClick,
+                    )
+                    .padding(horizontal = 24.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            Button(
-                onClick = onClick,
-                modifier = Modifier.fillMaxSize(),
-                shape = RoundedCornerShape(32.dp),
-                colors =
-                    ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = NexarOnAccent,
-                    ),
-                elevation =
-                    ButtonDefaults.buttonElevation(
-                        defaultElevation = 0.dp,
-                        pressedElevation = 0.dp,
-                    ),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
             ) {
                 Icon(
                     imageVector = Icons.Default.QrCodeScanner,
                     contentDescription = null,
                     modifier = Modifier.size(22.dp),
+                    tint = NexarOnAccent,
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
                     text = "Scan document",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
+                    color = NexarOnAccent,
                 )
             }
         }
-    } // closes Box(contentAlignment = Alignment.Center)
+    }
 }
 
 // ─── Skeleton loading card ────────────────────────────────────────────────────

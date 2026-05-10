@@ -5,21 +5,22 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.interop.UIKitView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.viewinterop.UIKitInteropProperties
+import androidx.compose.ui.viewinterop.UIKitView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
+import com.mohamedfaridelsherbini.nexar.ui.components.NexarCircleIconButton
 import platform.Foundation.NSURL
 import platform.PDFKit.PDFDocument
 import platform.PDFKit.PDFView
@@ -52,7 +53,7 @@ actual fun PreviewBridge(
 
 // ── PDF viewer — uses PDFKit.PDFView via UIKitView ────────────────────────────
 
-@OptIn(ExperimentalForeignApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun PdfViewerDialog(
     pdfUriString: String,
@@ -81,6 +82,7 @@ private fun PdfViewerDialog(
                     Modifier
                         .fillMaxSize()
                         .padding(padding),
+                properties = UIKitInteropProperties(),
             )
         }
     }
@@ -88,7 +90,7 @@ private fun PdfViewerDialog(
 
 // ── Image viewer — UIImageView for image-only documents (fallback) ────────────
 
-@OptIn(ExperimentalForeignApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalComposeUiApi::class, ExperimentalForeignApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun ImageViewerDialog(
     imageUriStrings: List<String>,
@@ -123,6 +125,7 @@ private fun ImageViewerDialog(
                     Modifier
                         .fillMaxSize()
                         .padding(padding),
+                properties = UIKitInteropProperties(),
             )
         }
     }
@@ -147,9 +150,11 @@ private fun ViewerTopBar(
             )
         },
         navigationIcon = {
-            IconButton(onClick = onDismiss) {
-                Icon(Icons.Default.Close, contentDescription = "Close viewer")
-            }
+            NexarCircleIconButton(
+                icon = Icons.Default.Close,
+                contentDescription = "Close viewer",
+                onClick = onDismiss,
+            )
         },
         actions = {
             if (pageCount > 1) {

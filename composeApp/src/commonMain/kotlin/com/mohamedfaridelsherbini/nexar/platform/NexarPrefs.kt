@@ -7,4 +7,13 @@ package com.mohamedfaridelsherbini.nexar.platform
 expect object NexarPrefs {
     /** True once the user has completed the first-launch onboarding flow. */
     var isOnboardingComplete: Boolean
+
+    /** The preferred UI theme: "System", "Light", or "Dark". Defaults to "System". */
+    var appTheme: String
+
+    /** Whether the app should notify the user to export pending documents. Defaults to true. */
+    var exportRemindersEnabled: Boolean
+
+    /** Whether the app should alert the user when a possible duplicate is detected. Defaults to true. */
+    var duplicateAlertsEnabled: Boolean
 }

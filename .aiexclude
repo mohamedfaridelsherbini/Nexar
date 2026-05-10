@@ -1,0 +1,22 @@
+# Block heavy generated directories
+**/build/**
+**/.gradle/**
+**/generated/**
+
+# Block IDE and environment metadata
+**/.idea/**
+**/.vscode/**
+**/.DS_Store**
+local.properties
+
+# Block binary assets and large blobs
+**/*.png**
+**/*.jpg**
+**/*.jpeg**
+**/*.pdf**
+**/*.xcassets/**
+**/*.bundle/**
+
+# Block specific heavy binary formats
+**/iosApp.xcodeproj/project.xcworkspace/**
+**/iosApp.xcodeproj/xcuserdata/**

@@ -1,0 +1,21 @@
+# Nexar AI Agent Rules (Anti-Hallucination)
+
+## 1. Ground Truth
+- **Source of Truth**: Always prioritize `TECH_CONTEXT.md` (architecture), `ROADMAP.md` (backlog), and `AGENT.md` (workflows).
+- **No Guessing**: If you are unsure of a file path, use `find_files` or `list_files`. Do not assume standard Android/iOS paths exist unless verified.
+- **API Verification**: Before using a library function (e.g., Room, Koin, Compose), check `libs.versions.toml` to see the exact version and verify API compatibility.
+
+## 2. Technical Guardrails
+- **KMP Pattern**: Always respect the `expect`/`actual` pattern for platform-specific code. Never place Android-only or iOS-only code in `commonMain`.
+- **Initialization**: Remember that platform services (Notifier, Haptics) MUST be initialized in `NexarApplication.kt` on Android to avoid `Context` leaks or null pointer exceptions.
+- **Room FTS**: We use **FTS3** (not FTS4) due to KSP/Apple compatibility bugs. Do not try to "upgrade" to FTS4 without explicit instruction.
+- **UI Mirroring**: If you change a user-visible feature in Compose (`composeApp`), you MUST check `iosApp/` and verify if the SwiftUI mirror needs an update.
+
+## 3. Interaction Protocol
+- **State Snapshot**: Before proposing a multi-file change, provide a brief "State Snapshot" in your thought process to verify your understanding of the current code state.
+- **Incremental Steps**: Break large features into small, testable chunks. Run `./gradlew :composeApp:compileDebugKotlinAndroid` after Kotlin changes.
+- **Linting**: All Kotlin code must pass `./gradlew detekt ktlintCheck`. All Swift code must pass `swiftlint lint iosApp`.
+
+## 4. Anti-Hallucination
+- If a dependency is missing, do not invent an implementation. Ask the user or check `libs.versions.toml`.
+- If a KMP `actual` is missing for a platform, do not assume it's "stubbed out". Verify all targets (`androidMain`, `iosMain`) are accounted for.

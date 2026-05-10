@@ -18,6 +18,7 @@ A unified source of truth for Nexar's strategic horizons and tactical engineerin
 
 | Priority | Feature | Notes | Status | Owner | Effort | Target |
 |:---:|---|---|:---:|:---:|:---:|:---:|
+| **P1** | iOS interaction stability | Eliminate remaining scan-button shadow/highlight rendering glitches across SwiftUI and Compose interop surfaces. | in_progress | TBD | S | near |
 | **P1** | Trash / restore | Soft-delete with 30-day restore window. | todo | TBD | M | near |
 | **P1** | Bulk actions | Multi-select export, delete, tag, and share. | todo | TBD | M | near |
 | **P1** | Permissions health | Camera/files/notifications status + deep links to settings. | todo | TBD | S | near |
@@ -35,9 +36,10 @@ A unified source of truth for Nexar's strategic horizons and tactical engineerin
 ## 3. Tactical Breakdowns
 
 ### Product & UX
-- **Settings / About**: Theme selection, notification toggles, app version.
+- **Settings / About**: Theme selection, notification toggles, and app version are implemented; next step is permissions/status surfacing.
 - **Search UX**: Highlight matches in list, recent query chips, empty-state guidance.
 - **Accessibility**: VoiceOver/TalkBack pass, dynamic type, and contrast audit.
+- **iOS Visual Stability**: Finish validation of scan CTA press/shadow behavior across SwiftUI and Compose-backed screens.
 
 ### Intelligence & Documents
 - **Merge / Split**: Combine multiple scans into one PDF; split one doc into many.
@@ -71,5 +73,7 @@ A unified source of truth for Nexar's strategic horizons and tactical engineerin
 - **UI Architecture**: KMP shared UI with Android Compose & iOS SwiftUI mirrors.
 - **Database**: Room (v6) with FTS3 support and destructive migration safety.
 - **Notifications**: Reminders for pending exports and duplicate alerts.
+- **Settings**: Theme selection, duplicate/export reminder toggles, and platform-backed app version display.
 - **UI Polish**: Animations, empty states, and accessibility refinements on dashboard.
+- **iOS UI Stability**: Reworked top-bar button press states and local scan CTA shadow/highlight ownership to reduce detached overlay rendering.
 - **Widget**: Android Glance widget for unexported document tracking.

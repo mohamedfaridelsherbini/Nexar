@@ -18,5 +18,5 @@ data class ScannedDocument(
     val isStarred: Boolean = false,
     val extractedAmount: String? = null,
     val extractedDate: String? = null,
-    val duplicateOfId: String? = null
+    val duplicateOfId: String? = null,
 )

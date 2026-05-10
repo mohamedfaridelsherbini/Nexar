@@ -16,6 +16,15 @@ This is a Kotlin Multiplatform project targeting Android, iOS.
   The most important subfolder is [commonMain](./shared/src/commonMain/kotlin). If preferred, you
   can add code to the platform-specific folders here too.
 
+### Code style (Android Studio)
+
+- Root [`.editorconfig`](./.editorconfig) — spacing and Kotlin import style; enable **Editor > Code Style > Enable EditorConfig support** in Android Studio.
+- [`config/README.md`](./config/README.md) — detekt layout and IDE notes (`.idea` is not committed).
+
+### Gemini Agent skills
+
+Agent Mode skills follow Google’s layout under [`.agent/skills/`](./.agent/skills/README.md). See **[Extend Agent Mode with skills](https://developer.android.com/studio/gemini/skills)**. Cursor loads the same content via symlinks in `.cursor/skills/`.
+
 ### Build and Run Android Application
 
 To build and run the development version of the Android app, use the run configuration from the run widget

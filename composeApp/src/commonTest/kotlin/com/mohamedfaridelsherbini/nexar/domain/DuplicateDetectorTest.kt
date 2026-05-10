@@ -7,17 +7,20 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNull
 
 class DuplicateDetectorTest {
-
-    private fun doc(id: String, ocrText: String) = ScannedDocument(
+    private fun doc(
+        id: String,
+        ocrText: String,
+    ) = ScannedDocument(
         id = id,
         name = "Test",
         dateMillis = 0L,
         imageUris = emptyList(),
-        ocrText = ocrText
+        ocrText = ocrText,
     )
 
-    private val richText = "invoice number 12345 bill to john doe payment due march 2024 " +
-        "vat net amount line item unit price qty quantity subtotal balance due"
+    private val richText =
+        "invoice number 12345 bill to john doe payment due march 2024 " +
+            "vat net amount line item unit price qty quantity subtotal balance due"
 
     @Test
     fun `returns null when no existing documents`() {

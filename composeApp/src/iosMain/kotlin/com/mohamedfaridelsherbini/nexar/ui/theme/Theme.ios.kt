@@ -8,7 +8,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 actual fun NexarTheme(
     darkTheme: Boolean,
     dynamicColor: Boolean,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     val colorScheme = if (darkTheme) NexarDarkColorScheme else NexarLightColorScheme
     val extraColors = if (darkTheme) NexarDarkExtraColors else NexarLightExtraColors
@@ -17,7 +17,7 @@ actual fun NexarTheme(
         MaterialTheme(
             colorScheme = colorScheme,
             typography = NexarTypography,
-            content = content
+            content = content,
         )
     }
 }

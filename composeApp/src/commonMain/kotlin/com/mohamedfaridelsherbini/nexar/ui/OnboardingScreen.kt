@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -49,35 +48,42 @@ private data class OnboardingPage(
     val icon: ImageVector,
     val title: String,
     val body: String,
-    val actionLabel: String
+    val actionLabel: String,
 )
 
-private val pages = listOf(
-    OnboardingPage(
-        icon = Icons.Outlined.Stars,
-        title = "Welcome to Nexar",
-        body = "Your intelligent document scanner that automatically reads, names, and organizes every document you capture.",
-        actionLabel = "Get started"
-    ),
-    OnboardingPage(
-        icon = Icons.Outlined.PhotoCamera,
-        title = "Scan & Read",
-        body = "Point your camera at any receipt, invoice, contract, ID, or medical record. Nexar's OCR engine reads the text and suggests a smart name instantly.",
-        actionLabel = "Next"
-    ),
-    OnboardingPage(
-        icon = Icons.Outlined.Hub,
-        title = "Auto-Organized",
-        body = "Every scan is automatically classified, tagged, and enriched with extracted amounts and dates. No manual sorting — ever.",
-        actionLabel = "Next"
-    ),
-    OnboardingPage(
-        icon = Icons.Outlined.FolderOpen,
-        title = "Export Anywhere",
-        body = "Save your documents to any folder on your device — iCloud Drive, Files, or external storage. Set an export folder once, then tap to export.",
-        actionLabel = "Done"
+private val pages =
+    listOf(
+        OnboardingPage(
+            icon = Icons.Outlined.Stars,
+            title = "Welcome to Nexar",
+            body = "Your intelligent document scanner that automatically reads, names, and organizes every document you capture.",
+            actionLabel = "Get started",
+        ),
+        OnboardingPage(
+            icon = Icons.Outlined.PhotoCamera,
+            title = "Scan & Read",
+            body =
+                "Point your camera at any receipt, invoice, contract, ID, or medical record. " +
+                    "Nexar's OCR engine reads the text and suggests a smart name instantly.",
+            actionLabel = "Next",
+        ),
+        OnboardingPage(
+            icon = Icons.Outlined.Hub,
+            title = "Auto-Organized",
+            body =
+                "Every scan is automatically classified, tagged, and enriched with extracted amounts and dates. " +
+                    "No manual sorting — ever.",
+            actionLabel = "Next",
+        ),
+        OnboardingPage(
+            icon = Icons.Outlined.FolderOpen,
+            title = "Export Anywhere",
+            body =
+                "Save your documents to any folder on your device — iCloud Drive, Files, or external storage. " +
+                    "Set an export folder once, then tap to export.",
+            actionLabel = "Done",
+        ),
     )
-)
 
 /**
  * Full-screen first-launch walkthrough.
@@ -93,22 +99,24 @@ fun OnboardingScreen(onComplete: () -> Unit) {
     val isLast = currentPage == pages.lastIndex
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
     ) {
         // Skip button
         if (!isLast) {
             TextButton(
                 onClick = onComplete,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(top = 12.dp, end = 16.dp)
+                modifier =
+                    Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 12.dp, end = 16.dp),
             ) {
                 Text(
                     "Skip",
                     style = MaterialTheme.typography.labelLarge,
-                    color = NexarExtraTheme.colors.foregroundMuted
+                    color = NexarExtraTheme.colors.foregroundMuted,
                 )
             }
         }
@@ -121,10 +129,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
                 (slideInHorizontally(tween(350)) { it * dir } + fadeIn(tween(250))) togetherWith
                     (slideOutHorizontally(tween(350)) { -it * dir } + fadeOut(tween(200)))
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.Center)
-                .padding(horizontal = 32.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.Center)
+                    .padding(horizontal = 32.dp),
         ) { idx ->
             val p = pages[idx]
             PageContent(page = p)
@@ -133,10 +142,11 @@ fun OnboardingScreen(onComplete: () -> Unit) {
         // Bottom bar: dots + action button
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = 28.dp, vertical = 48.dp)
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 28.dp, vertical = 48.dp),
         ) {
             // Dot indicators
             DotIndicator(total = pages.size, current = currentPage)
@@ -145,20 +155,25 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 
             Button(
                 onClick = {
-                    if (isLast) onComplete()
-                    else currentPage++
+                    if (isLast) {
+                        onComplete()
+                    } else {
+                        currentPage++
+                    }
                 },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                )
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                    ),
             ) {
                 Text(
                     page.actionLabel,
-                    style = MaterialTheme.typography.titleMedium
+                    style = MaterialTheme.typography.titleMedium,
                 )
             }
         }
@@ -169,21 +184,22 @@ fun OnboardingScreen(onComplete: () -> Unit) {
 private fun PageContent(page: OnboardingPage) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         // Icon bubble
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .size(120.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f))
+            modifier =
+                Modifier
+                    .size(120.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.10f)),
         ) {
             Icon(
                 imageVector = page.icon,
                 contentDescription = null,
                 modifier = Modifier.size(56.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = MaterialTheme.colorScheme.primary,
             )
         }
 
@@ -193,7 +209,7 @@ private fun PageContent(page: OnboardingPage) {
             text = page.title,
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
         )
 
         Spacer(Modifier.height(16.dp))
@@ -203,26 +219,36 @@ private fun PageContent(page: OnboardingPage) {
             style = MaterialTheme.typography.bodyLarge,
             color = NexarExtraTheme.colors.foregroundSecondary,
             textAlign = TextAlign.Center,
-            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight
+            lineHeight = MaterialTheme.typography.bodyLarge.lineHeight,
         )
     }
 }
 
 @Composable
-private fun DotIndicator(total: Int, current: Int) {
+private fun DotIndicator(
+    total: Int,
+    current: Int,
+) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         repeat(total) { idx ->
             Box(
-                modifier = Modifier
-                    .clip(CircleShape)
-                    .background(
-                        if (idx == current) MaterialTheme.colorScheme.primary
-                        else NexarExtraTheme.colors.borderSubtle
-                    )
-                    .then(
-                        if (idx == current) Modifier.size(width = 20.dp, height = 8.dp)
-                        else Modifier.size(8.dp)
-                    )
+                modifier =
+                    Modifier
+                        .clip(CircleShape)
+                        .background(
+                            if (idx == current) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                NexarExtraTheme.colors.borderSubtle
+                            },
+                        )
+                        .then(
+                            if (idx == current) {
+                                Modifier.size(width = 20.dp, height = 8.dp)
+                            } else {
+                                Modifier.size(8.dp)
+                            },
+                        ),
             )
         }
     }

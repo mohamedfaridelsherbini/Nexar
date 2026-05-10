@@ -5,7 +5,6 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
-import android.net.Uri
 import android.os.ParcelFileDescriptor
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -20,8 +19,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -42,27 +41,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.graphics.createBitmap
+import androidx.core.net.toUri
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.io.File
 
 @Composable
 actual fun PreviewBridge(
     document: ScannedDocument,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     when {
-        document.pdfUri != null -> PdfViewerDialog(
-            pdfUriString = document.pdfUri,
-            title = document.name,
-            onDismiss = onDismiss
-        )
-        document.imageUris.isNotEmpty() -> ImageViewerDialog(
-            imageUriStrings = document.imageUris,
-            title = document.name,
-            onDismiss = onDismiss
-        )
+        document.pdfUri != null ->
+            PdfViewerDialog(
+                pdfUriString = document.pdfUri,
+                title = document.name,
+                onDismiss = onDismiss,
+            )
+        document.imageUris.isNotEmpty() ->
+            ImageViewerDialog(
+                imageUriStrings = document.imageUris,
+                title = document.name,
+                onDismiss = onDismiss,
+            )
         else -> LaunchedEffect(Unit) { onDismiss() }
     }
 }
@@ -71,13 +74,18 @@ actual fun PreviewBridge(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun PdfViewerDialog(pdfUriString: String, title: String, onDismiss: () -> Unit) {
+private fun PdfViewerDialog(
+    pdfUriString: String,
+    title: String,
+    onDismiss: () -> Unit,
+) {
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+        properties =
+            DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+            ),
     ) {
         val context = LocalContext.current
         val pages by produceState<List<Bitmap>>(initialValue = emptyList(), pdfUriString) {
@@ -89,26 +97,26 @@ private fun PdfViewerDialog(pdfUriString: String, title: String, onDismiss: () -
                 ViewerTopBar(
                     title = title,
                     pageCount = pages.size,
-                    onDismiss = onDismiss
+                    onDismiss = onDismiss,
                 )
-            }
+            },
         ) { padding ->
             ViewerContent(
                 items = pages,
                 modifier = Modifier.padding(padding),
-                loadingCondition = pages.isEmpty()
+                loadingCondition = pages.isEmpty(),
             ) { index, bitmap ->
                 Surface(
                     shape = MaterialTheme.shapes.medium,
                     shadowElevation = 2.dp,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column {
                         Image(
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "Page ${index + 1}",
                             contentScale = ContentScale.FillWidth,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
                         if (pages.size > 1) {
                             PageLabel(index = index, total = pages.size)
@@ -120,7 +128,10 @@ private fun PdfViewerDialog(pdfUriString: String, title: String, onDismiss: () -
     }
 }
 
-private fun renderPdfPages(context: Context, uriString: String): List<Bitmap> {
+private fun renderPdfPages(
+    context: Context,
+    uriString: String,
+): List<Bitmap> {
     return try {
         val pfd = openParcelFileDescriptor(context, uriString) ?: return emptyList()
         pfd.use { descriptor ->
@@ -129,9 +140,8 @@ private fun renderPdfPages(context: Context, uriString: String): List<Bitmap> {
                 (0 until renderer.pageCount).map { index ->
                     renderer.openPage(index).use { page ->
                         val scale = screenWidth.toFloat() / page.width
-                        val bitmapWidth = screenWidth
                         val bitmapHeight = (page.height * scale).toInt()
-                        Bitmap.createBitmap(bitmapWidth, bitmapHeight, Bitmap.Config.ARGB_8888)
+                        createBitmap(screenWidth, bitmapHeight)
                             .also { bmp ->
                                 bmp.eraseColor(Color.WHITE)
                                 page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
@@ -140,7 +150,7 @@ private fun renderPdfPages(context: Context, uriString: String): List<Bitmap> {
                 }
             }
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         emptyList()
     }
 }
@@ -152,22 +162,28 @@ private fun renderPdfPages(context: Context, uriString: String): List<Bitmap> {
 private fun ImageViewerDialog(
     imageUriStrings: List<String>,
     title: String,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     Dialog(
         onDismissRequest = onDismiss,
-        properties = DialogProperties(
-            usePlatformDefaultWidth = false,
-            decorFitsSystemWindows = false
-        )
+        properties =
+            DialogProperties(
+                usePlatformDefaultWidth = false,
+                decorFitsSystemWindows = false,
+            ),
     ) {
         val context = LocalContext.current
         val bitmaps by produceState<List<Bitmap>>(initialValue = emptyList(), imageUriStrings) {
-            value = withContext(Dispatchers.IO) {
-                imageUriStrings.mapNotNull { uriString ->
-                    try { loadBitmap(context, uriString) } catch (e: Exception) { null }
+            value =
+                withContext(Dispatchers.IO) {
+                    imageUriStrings.mapNotNull { uriString ->
+                        try {
+                            loadBitmap(context, uriString)
+                        } catch (_: Exception) {
+                            null
+                        }
+                    }
                 }
-            }
         }
 
         Scaffold(
@@ -175,26 +191,26 @@ private fun ImageViewerDialog(
                 ViewerTopBar(
                     title = title,
                     pageCount = bitmaps.size,
-                    onDismiss = onDismiss
+                    onDismiss = onDismiss,
                 )
-            }
+            },
         ) { padding ->
             ViewerContent(
                 items = bitmaps,
                 modifier = Modifier.padding(padding),
-                loadingCondition = bitmaps.isEmpty()
+                loadingCondition = bitmaps.isEmpty(),
             ) { index, bitmap ->
                 Surface(
                     shape = MaterialTheme.shapes.medium,
                     shadowElevation = 2.dp,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     Column {
                         Image(
                             bitmap = bitmap.asImageBitmap(),
                             contentDescription = "Page ${index + 1}",
                             contentScale = ContentScale.FillWidth,
-                            modifier = Modifier.fillMaxWidth()
+                            modifier = Modifier.fillMaxWidth(),
                         )
                         if (bitmaps.size > 1) {
                             PageLabel(index = index, total = bitmaps.size)
@@ -206,8 +222,11 @@ private fun ImageViewerDialog(
     }
 }
 
-private fun loadBitmap(context: Context, uriString: String): Bitmap? {
-    val uri = Uri.parse(uriString)
+private fun loadBitmap(
+    context: Context,
+    uriString: String,
+): Bitmap? {
+    val uri = uriString.toUri()
     return if (uri.scheme == "content") {
         context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it) }
     } else {
@@ -220,14 +239,18 @@ private fun loadBitmap(context: Context, uriString: String): Bitmap? {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ViewerTopBar(title: String, pageCount: Int, onDismiss: () -> Unit) {
+private fun ViewerTopBar(
+    title: String,
+    pageCount: Int,
+    onDismiss: () -> Unit,
+) {
     TopAppBar(
         title = {
             Text(
                 text = title,
                 maxLines = 1,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.SemiBold,
             )
         },
         navigationIcon = {
@@ -241,10 +264,10 @@ private fun ViewerTopBar(title: String, pageCount: Int, onDismiss: () -> Unit) {
                     text = "$pageCount page${if (pageCount != 1) "s" else ""}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(end = 16.dp)
+                    modifier = Modifier.padding(end = 16.dp),
                 )
             }
-        }
+        },
     )
 }
 
@@ -253,22 +276,23 @@ private fun <T> ViewerContent(
     items: List<T>,
     modifier: Modifier = Modifier,
     loadingCondition: Boolean,
-    itemContent: @Composable (index: Int, item: T) -> Unit
+    itemContent: @Composable (index: Int, item: T) -> Unit,
 ) {
     if (loadingCondition) {
         Box(
             modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
+            contentAlignment = Alignment.Center,
         ) {
             CircularProgressIndicator()
         }
     } else {
         LazyColumn(
-            modifier = modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceVariant),
+            modifier =
+                modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.surfaceVariant),
             verticalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(16.dp)
+            contentPadding = PaddingValues(16.dp),
         ) {
             itemsIndexed(items) { index, item ->
                 itemContent(index, item)
@@ -278,27 +302,34 @@ private fun <T> ViewerContent(
 }
 
 @Composable
-private fun PageLabel(index: Int, total: Int) {
+private fun PageLabel(
+    index: Int,
+    total: Int,
+) {
     Text(
         text = "Page ${index + 1} of $total",
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
     )
 }
 
-private fun openParcelFileDescriptor(context: Context, uriString: String): ParcelFileDescriptor? {
+private fun openParcelFileDescriptor(
+    context: Context,
+    uriString: String,
+): ParcelFileDescriptor? {
     return try {
-        val uri = Uri.parse(uriString)
+        val uri = uriString.toUri()
         when (uri.scheme) {
             "content" -> context.contentResolver.openFileDescriptor(uri, "r")
-            "file" -> ParcelFileDescriptor.open(
-                File(uri.path ?: return null),
-                ParcelFileDescriptor.MODE_READ_ONLY
-            )
+            "file" ->
+                ParcelFileDescriptor.open(
+                    File(uri.path ?: return null),
+                    ParcelFileDescriptor.MODE_READ_ONLY,
+                )
             else -> ParcelFileDescriptor.open(File(uriString), ParcelFileDescriptor.MODE_READ_ONLY)
         }
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         null
     }
 }

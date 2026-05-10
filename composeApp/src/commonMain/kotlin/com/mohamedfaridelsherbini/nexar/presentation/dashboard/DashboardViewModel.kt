@@ -1,3 +1,5 @@
+@file:Suppress("PropertyNaming", "ktlint:standard:property-naming")
+
 package com.mohamedfaridelsherbini.nexar.presentation.dashboard
 
 import androidx.lifecycle.ViewModel
@@ -7,9 +9,9 @@ import com.mohamedfaridelsherbini.nexar.domain.usecase.DashboardUseCases
 import com.mohamedfaridelsherbini.nexar.domain.usecase.ProcessScannedDocumentUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.SearchDocumentsUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.StorageAnalyticsUseCase
+import com.mohamedfaridelsherbini.nexar.platform.NexarNotifier
 import com.mohamedfaridelsherbini.nexar.platform.triggerSuccessHaptic
 import com.mohamedfaridelsherbini.nexar.platform.triggerWarningHaptic
-import com.mohamedfaridelsherbini.nexar.platform.NexarNotifier
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -17,7 +19,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -43,9 +44,8 @@ class DashboardViewModel(
     private val useCases: DashboardUseCases,
     private val processScannedDocument: ProcessScannedDocumentUseCase,
     private val analyticsUseCase: StorageAnalyticsUseCase,
-    private val searchDocuments: SearchDocumentsUseCase
+    private val searchDocuments: SearchDocumentsUseCase,
 ) : ViewModel() {
-
     private val _prefs = MutableStateFlow(UiPreferences())
 
     /**
@@ -53,48 +53,50 @@ class DashboardViewModel(
      * [SearchDocumentsUseCase] flow.  [flatMapLatest] ensures that changing the
      * query cancels the previous search and starts a new one immediately.
      */
-    private val documentsFlow = _prefs
-        .map { it.searchQuery }
-        .distinctUntilChanged()
-        .flatMapLatest { query ->
-            if (query.isBlank()) {
-                useCases.observeDocuments()
-                    .onEach { _prefs.update { it.copy(hasLoaded = true) } }
-            } else {
-                searchDocuments(query)
-                    .onEach { _prefs.update { it.copy(hasLoaded = true) } }
-            }
-        }
-
-    val uiState: StateFlow<DashboardUiState> = combine(
-        documentsFlow,
-        useCases.observeStorageLocation(),
+    private val documentsFlow =
         _prefs
-    ) { documents, storageLocation, prefs ->
-        val sorted = documents.sorted(prefs.sort)
-        // Category/star filtering still applied on top of FTS results
-        val visible = sorted.applyFilter(prefs.activeFilter)
-        DashboardUiState(
-            documents = sorted,
-            visibleDocuments = visible,
-            storageLocation = storageLocation,
-            sort = prefs.sort,
-            batchExportResult = prefs.batchExportResult,
-            analytics = analyticsUseCase(sorted),
-            searchQuery = prefs.searchQuery,
-            activeFilter = prefs.activeFilter,
-            ocrSheetDocumentId = prefs.ocrSheetDocumentId,
-            isLoadingDocuments = !prefs.hasLoaded,
-            processingDocumentId = prefs.processingDocumentId,
-            exportingDocumentId = prefs.exportingDocumentId,
-            isBatchExporting = prefs.isBatchExporting,
-            error = prefs.error,
+            .map { it.searchQuery }
+            .distinctUntilChanged()
+            .flatMapLatest { query ->
+                if (query.isBlank()) {
+                    useCases.observeDocuments()
+                        .onEach { _prefs.update { it.copy(hasLoaded = true) } }
+                } else {
+                    searchDocuments(query)
+                        .onEach { _prefs.update { it.copy(hasLoaded = true) } }
+                }
+            }
+
+    val uiState: StateFlow<DashboardUiState> =
+        combine(
+            documentsFlow,
+            useCases.observeStorageLocation(),
+            _prefs,
+        ) { documents, storageLocation, prefs ->
+            val sorted = documents.sorted(prefs.sort)
+            // Category/star filtering still applied on top of FTS results
+            val visible = sorted.applyFilter(prefs.activeFilter)
+            DashboardUiState(
+                documents = sorted,
+                visibleDocuments = visible,
+                storageLocation = storageLocation,
+                sort = prefs.sort,
+                batchExportResult = prefs.batchExportResult,
+                analytics = analyticsUseCase(sorted),
+                searchQuery = prefs.searchQuery,
+                activeFilter = prefs.activeFilter,
+                ocrSheetDocumentId = prefs.ocrSheetDocumentId,
+                isLoadingDocuments = !prefs.hasLoaded,
+                processingDocumentId = prefs.processingDocumentId,
+                exportingDocumentId = prefs.exportingDocumentId,
+                isBatchExporting = prefs.isBatchExporting,
+                error = prefs.error,
+            )
+        }.stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = DashboardUiState(),
         )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = DashboardUiState()
-    )
 
     // ── Scan ──────────────────────────────────────────────────────────────────
 
@@ -109,7 +111,7 @@ class DashboardViewModel(
                     triggerWarningHaptic()
                     NexarNotifier.postDuplicateAlert(document.name)
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _prefs.update { it.copy(error = NexarError.OcrFailed(document.name)) }
             } finally {
                 _prefs.update { it.copy(processingDocumentId = null) }
@@ -123,7 +125,10 @@ class DashboardViewModel(
         viewModelScope.launch { useCases.updateDocument(document) }
     }
 
-    fun onRenameDocument(documentId: String, newName: String) {
+    fun onRenameDocument(
+        documentId: String,
+        newName: String,
+    ) {
         viewModelScope.launch { useCases.renameDocument(documentId, newName) }
     }
 
@@ -151,7 +156,7 @@ class DashboardViewModel(
                 } else {
                     _prefs.update { it.copy(error = NexarError.ExportFailed(document.name)) }
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _prefs.update { it.copy(error = NexarError.ExportFailed(document.name)) }
             } finally {
                 _prefs.update { it.copy(exportingDocumentId = null) }
@@ -167,7 +172,7 @@ class DashboardViewModel(
                 val result = useCases.batchExport(docs)
                 _prefs.update { it.copy(batchExportResult = result) }
                 if (result.first > 0) triggerSuccessHaptic()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _prefs.update { it.copy(error = NexarError.ExportFailed("batch export")) }
             } finally {
                 _prefs.update { it.copy(isBatchExporting = false) }
@@ -184,7 +189,7 @@ class DashboardViewModel(
             try {
                 val success = useCases.createFolder(folderName)
                 if (!success) _prefs.update { it.copy(error = NexarError.FolderCreationFailed) }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 _prefs.update { it.copy(error = NexarError.FolderCreationFailed) }
             }
         }
@@ -218,17 +223,19 @@ class DashboardViewModel(
 
     // ── Helpers ───────────────────────────────────────────────────────────────
 
-    private fun List<ScannedDocument>.sorted(order: SortOrder) = when (order) {
-        SortOrder.Newest -> sortedByDescending { it.dateMillis }
-        SortOrder.Oldest -> sortedBy { it.dateMillis }
-        SortOrder.NameAsc -> sortedBy { it.name.lowercase() }
-        SortOrder.CategoryAsc -> sortedBy { it.category.displayName }
-    }
+    private fun List<ScannedDocument>.sorted(order: SortOrder) =
+        when (order) {
+            SortOrder.Newest -> sortedByDescending { it.dateMillis }
+            SortOrder.Oldest -> sortedBy { it.dateMillis }
+            SortOrder.NameAsc -> sortedBy { it.name.lowercase() }
+            SortOrder.CategoryAsc -> sortedBy { it.category.displayName }
+        }
 
-    private fun List<ScannedDocument>.applyFilter(filter: DashboardFilter) = when (filter) {
-        DashboardFilter.All -> this
-        DashboardFilter.NeedsExport -> filter { !it.isExportedToStorage }
-        DashboardFilter.Starred -> filter { it.isStarred }
-        else -> filter.toCategory()?.let { cat -> filter { it.category == cat } } ?: this
-    }
+    private fun List<ScannedDocument>.applyFilter(filter: DashboardFilter) =
+        when (filter) {
+            DashboardFilter.All -> this
+            DashboardFilter.NeedsExport -> filter { !it.isExportedToStorage }
+            DashboardFilter.Starred -> filter { it.isStarred }
+            else -> filter.toCategory()?.let { cat -> filter { it.category == cat } } ?: this
+        }
 }

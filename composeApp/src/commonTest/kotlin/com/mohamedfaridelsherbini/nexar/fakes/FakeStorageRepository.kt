@@ -8,14 +8,15 @@ import kotlinx.coroutines.flow.update
 
 class FakeStorageRepository(
     private val saveResult: Boolean = true,
-    private val createFolderResult: Boolean = true
+    private val createFolderResult: Boolean = true,
 ) : StorageRepository {
-
     private val _location = MutableStateFlow<String?>(null)
 
     val savedDocuments = mutableListOf<ScannedDocument>()
     var currentLocation: String? get() = _location.value
-        set(value) { _location.value = value }
+        set(value) {
+            _location.value = value
+        }
 
     override fun observeStorageLocation(): Flow<String?> = _location
 

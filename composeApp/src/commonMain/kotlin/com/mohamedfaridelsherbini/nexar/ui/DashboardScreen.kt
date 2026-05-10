@@ -1,22 +1,33 @@
 package com.mohamedfaridelsherbini.nexar.ui
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import com.mohamedfaridelsherbini.nexar.platform.sharePdf
 import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardFilter
@@ -58,21 +69,24 @@ fun DashboardScreen(
     onErrorDismissed: () -> Unit,
 ) {
     val storageLocation = uiState.storageLocation
-    val needsExportCount = remember(uiState.documents) {
-        uiState.documents.count { !it.isExportedToStorage }
-    }
+    val needsExportCount =
+        remember(uiState.documents) {
+            uiState.documents.count { !it.isExportedToStorage }
+        }
 
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+        modifier =
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp)
-                .padding(top = 18.dp, bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 24.dp)
+                    .padding(top = 18.dp, bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
         ) {
             NexarTopBar(
                 onSettingsClick = onSetStorageClick,
@@ -81,7 +95,7 @@ fun DashboardScreen(
                 onSortChanged = onSortChanged,
                 needsExportCount = needsExportCount,
                 storageConfigured = storageLocation != null,
-                onBatchExportClick = if (storageLocation != null && needsExportCount > 0) onBatchExportClick else null
+                onBatchExportClick = if (storageLocation != null && needsExportCount > 0) onBatchExportClick else null,
             )
 
             if (storageLocation == null) {
@@ -90,13 +104,13 @@ fun DashboardScreen(
 
             NexarSearchInput(
                 value = uiState.searchQuery,
-                onValueChange = onSearchQueryChanged
+                onValueChange = onSearchQueryChanged,
             )
 
             QuickFilters(
                 selected = uiState.activeFilter,
                 needsExportCount = needsExportCount,
-                onSelect = onFilterChanged
+                onSelect = onFilterChanged,
             )
 
             StorageAnalyticsCard(analytics = uiState.analytics)
@@ -112,83 +126,93 @@ fun DashboardScreen(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
                     text = "Recent documents",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(18.dp),
-                    border = BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle)
+                    border = BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle),
                 ) {
                     Text(
                         text = "${uiState.visibleDocuments.size} scans",
                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                         style = MaterialTheme.typography.labelMedium,
                         fontWeight = FontWeight.SemiBold,
-                        color = NexarExtraTheme.colors.foregroundSecondary
+                        color = NexarExtraTheme.colors.foregroundSecondary,
                     )
                 }
             }
 
             // AnimatedContent drives a cross-fade between loading / empty / content states.
             AnimatedContent(
-                targetState = when {
-                    uiState.isLoadingDocuments -> 0
-                    uiState.visibleDocuments.isEmpty() -> 1
-                    else -> 2
-                },
+                targetState =
+                    when {
+                        uiState.isLoadingDocuments -> 0
+                        uiState.visibleDocuments.isEmpty() -> 1
+                        else -> 2
+                    },
                 transitionSpec = { fadeIn(tween(350)) togetherWith fadeOut(tween(200)) },
                 modifier = Modifier.fillMaxWidth().weight(1f),
-                label = "dashboard_content"
+                label = "dashboard_content",
             ) { contentState ->
                 when (contentState) {
-                    0 -> LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(3) { SkeletonDocumentCard() }
-                    }
-                    1 -> Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        NexarEmptyState(
-                            filter = uiState.activeFilter,
-                            searchQuery = uiState.searchQuery
-                        )
-                    }
-                    else -> LazyColumn(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        items(uiState.visibleDocuments, key = { it.id }) { doc ->
-                            SwipeableDocumentCard(
-                                modifier = Modifier.animateItem(),
-                                document = doc,
-                                exportEnabled = storageLocation != null,
-                                isProcessing = uiState.processingDocumentId == doc.id,
-                                isExporting = uiState.exportingDocumentId == doc.id,
-                                onPreviewClick = { onDocumentClick(doc) },
-                                onRenameClick = { onRenameClick(doc) },
-                                onExportClick = { onSaveToStorageClick(doc) },
-                                onConfigureExportClick = onSetStorageClick,
-                                onDeleteClick = { onDeleteClick(doc) },
-                                onStarClick = { onStarClick(doc) },
-                                onOcrViewClick = if (doc.ocrProcessed && doc.ocrText.isNotBlank()) {
-                                    { onOcrSheetOpen(doc.id) }
-                                } else null,
-                                onShareClick = if (doc.pdfUri != null) {
-                                    { sharePdf(doc.pdfUri, doc.name) }
-                                } else null,
-                                onDetailClick = { onDetailClick(doc) }
+                    0 ->
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(3) { SkeletonDocumentCard() }
+                        }
+                    1 ->
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            NexarEmptyState(
+                                filter = uiState.activeFilter,
+                                searchQuery = uiState.searchQuery,
                             )
                         }
-                    }
+                    else ->
+                        LazyColumn(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            items(uiState.visibleDocuments, key = { it.id }) { doc ->
+                                SwipeableDocumentCard(
+                                    modifier = Modifier.animateItem(),
+                                    document = doc,
+                                    exportEnabled = storageLocation != null,
+                                    isProcessing = uiState.processingDocumentId == doc.id,
+                                    isExporting = uiState.exportingDocumentId == doc.id,
+                                    onPreviewClick = { onDocumentClick(doc) },
+                                    onRenameClick = { onRenameClick(doc) },
+                                    onExportClick = { onSaveToStorageClick(doc) },
+                                    onConfigureExportClick = onSetStorageClick,
+                                    onDeleteClick = { onDeleteClick(doc) },
+                                    onStarClick = { onStarClick(doc) },
+                                    onOcrViewClick =
+                                        if (doc.ocrProcessed && doc.ocrText.isNotBlank()) {
+                                            { onOcrSheetOpen(doc.id) }
+                                        } else {
+                                            null
+                                        },
+                                    onShareClick =
+                                        if (doc.pdfUri != null) {
+                                            { sharePdf(doc.pdfUri, doc.name) }
+                                        } else {
+                                            null
+                                        },
+                                    onDetailClick = { onDetailClick(doc) },
+                                )
+                            }
+                        }
                 }
             }
 
@@ -196,9 +220,10 @@ fun DashboardScreen(
         }
 
         Box(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(horizontal = 24.dp, vertical = 24.dp)
+            modifier =
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 24.dp, vertical = 24.dp),
         ) {
             NexarFAB(onClick = onScanClick, hasDocuments = uiState.documents.isNotEmpty())
         }
@@ -218,12 +243,12 @@ fun DashboardScreen(
             text = {
                 Text(
                     "$success document${if (success != 1) "s" else ""} exported successfully" +
-                        if (failed > 0) ", $failed failed." else "."
+                        if (failed > 0) ", $failed failed." else ".",
                 )
             },
             confirmButton = {
                 TextButton(onClick = onBatchResultDismissed) { Text("OK") }
-            }
+            },
         )
     }
 }

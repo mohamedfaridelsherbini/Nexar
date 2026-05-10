@@ -8,11 +8,12 @@ import com.mohamedfaridelsherbini.nexar.domain.repository.StorageRepository
 import com.mohamedfaridelsherbini.nexar.storage.IOSStorageRepository
 import org.koin.dsl.module
 
-val iosModule = module {
-    single<AppDatabase> { getDatabaseBuilder().build() }
-    single<DocumentRepository> {
-        val db = get<AppDatabase>()
-        DocumentRepositoryImpl(db.documentDao(), db.documentFtsDao())
+val iosModule =
+    module {
+        single<AppDatabase> { getDatabaseBuilder().build() }
+        single<DocumentRepository> {
+            val db = get<AppDatabase>()
+            DocumentRepositoryImpl(db.documentDao(), db.documentFtsDao())
+        }
+        single<StorageRepository> { IOSStorageRepository() }
     }
-    single<StorageRepository> { IOSStorageRepository() }
-}

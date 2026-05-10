@@ -5,34 +5,45 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mohamedfaridelsherbini.nexar.ui.theme.NexarExtraTheme
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import androidx.savedstate.serialization.SavedStateConfiguration
+import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import com.mohamedfaridelsherbini.nexar.navigation.Dashboard
 import com.mohamedfaridelsherbini.nexar.navigation.DocumentDetail
 import com.mohamedfaridelsherbini.nexar.navigation.Scanner
-import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
-import org.koin.compose.viewmodel.koinViewModel
+import com.mohamedfaridelsherbini.nexar.platform.NexarPrefs
 import com.mohamedfaridelsherbini.nexar.platform.sharePdf
 import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardViewModel
+import com.mohamedfaridelsherbini.nexar.storage.StoragePickerBridge
 import com.mohamedfaridelsherbini.nexar.ui.DashboardScreen
 import com.mohamedfaridelsherbini.nexar.ui.DocumentDetailScreen
+import com.mohamedfaridelsherbini.nexar.ui.OnboardingScreen
+import com.mohamedfaridelsherbini.nexar.ui.theme.NexarExtraTheme
 import com.mohamedfaridelsherbini.nexar.ui.theme.NexarTheme
-import com.mohamedfaridelsherbini.nexar.storage.StoragePickerBridge
-import androidx.savedstate.serialization.SavedStateConfiguration
+import org.koin.compose.viewmodel.koinViewModel
 import kotlinx.serialization.modules.SerializersModule
 import kotlinx.serialization.modules.polymorphic
 import kotlinx.serialization.modules.subclass
-import com.mohamedfaridelsherbini.nexar.platform.NexarPrefs
-import com.mohamedfaridelsherbini.nexar.ui.OnboardingScreen
 
 @Composable
 fun App() {
@@ -44,22 +55,23 @@ fun App() {
                 onComplete = {
                     NexarPrefs.isOnboardingComplete = true
                     onboardingComplete = true
-                }
+                },
             )
             return@NexarTheme
         }
-        val navStateConfiguration = remember {
-            SavedStateConfiguration {
-                serializersModule =
-                    SerializersModule {
-                        polymorphic(NavKey::class) {
-                            subclass(Dashboard::class, Dashboard.serializer())
-                            subclass(Scanner::class, Scanner.serializer())
-                            subclass(DocumentDetail::class, DocumentDetail.serializer())
+        val navStateConfiguration =
+            remember {
+                SavedStateConfiguration {
+                    serializersModule =
+                        SerializersModule {
+                            polymorphic(NavKey::class) {
+                                subclass(Dashboard::class, Dashboard.serializer())
+                                subclass(Scanner::class, Scanner.serializer())
+                                subclass(DocumentDetail::class, DocumentDetail.serializer())
+                            }
                         }
-                    }
+                }
             }
-        }
         val backStack = rememberNavBackStack(navStateConfiguration, Dashboard)
         val dashboardViewModel: DashboardViewModel = koinViewModel()
         val uiState by dashboardViewModel.uiState.collectAsState()
@@ -73,65 +85,72 @@ fun App() {
             backStack = backStack,
             modifier = Modifier.fillMaxSize(),
             onBack = { if (backStack.size > 1) backStack.removeAt(backStack.size - 1) },
-            entryProvider = entryProvider {
-                entry<Dashboard> {
-                    DashboardScreen(
-                        uiState = uiState,
-                        onScanClick = { backStack.add(Scanner()) },
-                        onRenameClick = { documentToRename = it },
-                        onDocumentClick = { doc -> documentToPreview = doc },
-                        onSetStorageClick = { showStoragePicker = true },
-                        onSaveToStorageClick = { dashboardViewModel.onSaveDocumentToStorage(it) },
-                        onCreateFolderClick = { showCreateFolderDialog = true },
-                        onDeleteClick = { dashboardViewModel.onDeleteDocument(it) },
-                        onStarClick = { dashboardViewModel.onToggleStar(it) },
-                        onSortChanged = { dashboardViewModel.onSortChanged(it) },
-                        onBatchExportClick = { dashboardViewModel.onBatchExport() },
-                        onDetailClick = { backStack.add(DocumentDetail(it.id)) },
-                        onBatchResultDismissed = { dashboardViewModel.onBatchResultDismissed() },
-                        onSearchQueryChanged = { dashboardViewModel.onSearchQueryChanged(it) },
-                        onFilterChanged = { dashboardViewModel.onFilterChanged(it) },
-                        onOcrSheetOpen = { dashboardViewModel.onOcrSheetOpen(it) },
-                        onOcrSheetDismissed = { dashboardViewModel.onOcrSheetDismissed() },
-                        onErrorDismissed = { dashboardViewModel.onErrorDismissed() }
-                    )
-                }
-                entry<Scanner> {
-                    ScannerBridge(
-                        onResult = { doc ->
-                            dashboardViewModel.onDocumentScanned(doc)
-                            backStack.removeAt(backStack.size - 1)
-                        },
-                        onCancel = {
-                            backStack.removeAt(backStack.size - 1)
-                        }
-                    )
-                }
-                entry<DocumentDetail> { key ->
-                    val doc = uiState.documents.find { it.id == key.documentId }
-                    if (doc != null) {
-                        DocumentDetailScreen(
-                            document = doc,
-                            onBack = { backStack.removeAt(backStack.size - 1) },
-                            onSave = { updated -> dashboardViewModel.onSaveDocumentUpdate(updated) },
-                            onExport = { dashboardViewModel.onSaveDocumentToStorage(it) },
-                            onShare = if (doc.pdfUri != null) {
-                                { d -> sharePdf(d.pdfUri!!, d.name) }
-                            } else null,
-                            onPreview = if (doc.pdfUri != null || doc.imageUris.isNotEmpty()) {
-                                { d -> documentToPreview = d }
-                            } else null,
-                            exportEnabled = uiState.storageLocation != null
+            entryProvider =
+                entryProvider {
+                    entry<Dashboard> {
+                        DashboardScreen(
+                            uiState = uiState,
+                            onScanClick = { backStack.add(Scanner()) },
+                            onRenameClick = { documentToRename = it },
+                            onDocumentClick = { doc -> documentToPreview = doc },
+                            onSetStorageClick = { showStoragePicker = true },
+                            onSaveToStorageClick = { dashboardViewModel.onSaveDocumentToStorage(it) },
+                            onCreateFolderClick = { showCreateFolderDialog = true },
+                            onDeleteClick = { dashboardViewModel.onDeleteDocument(it) },
+                            onStarClick = { dashboardViewModel.onToggleStar(it) },
+                            onSortChanged = { dashboardViewModel.onSortChanged(it) },
+                            onBatchExportClick = { dashboardViewModel.onBatchExport() },
+                            onDetailClick = { backStack.add(DocumentDetail(it.id)) },
+                            onBatchResultDismissed = { dashboardViewModel.onBatchResultDismissed() },
+                            onSearchQueryChanged = { dashboardViewModel.onSearchQueryChanged(it) },
+                            onFilterChanged = { dashboardViewModel.onFilterChanged(it) },
+                            onOcrSheetOpen = { dashboardViewModel.onOcrSheetOpen(it) },
+                            onOcrSheetDismissed = { dashboardViewModel.onOcrSheetDismissed() },
+                            onErrorDismissed = { dashboardViewModel.onErrorDismissed() },
                         )
                     }
-                }
-            }
+                    entry<Scanner> {
+                        ScannerBridge(
+                            onResult = { doc ->
+                                dashboardViewModel.onDocumentScanned(doc)
+                                backStack.removeAt(backStack.size - 1)
+                            },
+                            onCancel = {
+                                backStack.removeAt(backStack.size - 1)
+                            },
+                        )
+                    }
+                    entry<DocumentDetail> { key ->
+                        val doc = uiState.documents.find { it.id == key.documentId }
+                        if (doc != null) {
+                            DocumentDetailScreen(
+                                document = doc,
+                                onBack = { backStack.removeAt(backStack.size - 1) },
+                                onSave = { updated -> dashboardViewModel.onSaveDocumentUpdate(updated) },
+                                onExport = { dashboardViewModel.onSaveDocumentToStorage(it) },
+                                onShare =
+                                    if (doc.pdfUri != null) {
+                                        { d -> sharePdf(d.pdfUri!!, d.name) }
+                                    } else {
+                                        null
+                                    },
+                                onPreview =
+                                    if (doc.pdfUri != null || doc.imageUris.isNotEmpty()) {
+                                        { d -> documentToPreview = d }
+                                    } else {
+                                        null
+                                    },
+                                exportEnabled = uiState.storageLocation != null,
+                            )
+                        }
+                    }
+                },
         )
 
         documentToPreview?.let { doc ->
             com.mohamedfaridelsherbini.nexar.ui.PreviewBridge(
                 document = doc,
-                onDismiss = { documentToPreview = null }
+                onDismiss = { documentToPreview = null },
             )
         }
 
@@ -142,7 +161,7 @@ fun App() {
                     dashboardViewModel.onRenameDocument(doc.id, newName)
                     documentToRename = null
                 },
-                onDismiss = { documentToRename = null }
+                onDismiss = { documentToRename = null },
             )
         }
 
@@ -152,7 +171,7 @@ fun App() {
                     dashboardViewModel.onStorageLocationSelected(uri)
                     showStoragePicker = false
                 },
-                onCancel = { showStoragePicker = false }
+                onCancel = { showStoragePicker = false },
             )
         }
 
@@ -162,7 +181,7 @@ fun App() {
                     dashboardViewModel.onCreateFolder(folderName)
                     showCreateFolderDialog = false
                 },
-                onDismiss = { showCreateFolderDialog = false }
+                onDismiss = { showCreateFolderDialog = false },
             )
         }
     }
@@ -171,7 +190,7 @@ fun App() {
 @Composable
 fun CreateFolderDialog(
     onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var name by remember { mutableStateOf("") }
     NexarDialog(
@@ -179,12 +198,12 @@ fun CreateFolderDialog(
         confirmLabel = "Create",
         confirmEnabled = name.isNotBlank(),
         onConfirm = { onConfirm(name) },
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
     ) {
         NexarDialogField(
             value = name,
             onValueChange = { name = it },
-            placeholder = "Folder name"
+            placeholder = "Folder name",
         )
     }
 }
@@ -193,7 +212,7 @@ fun CreateFolderDialog(
 fun RenameDialog(
     currentName: String,
     onConfirm: (String) -> Unit,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 ) {
     var name by remember { mutableStateOf(currentName) }
     NexarDialog(
@@ -201,12 +220,12 @@ fun RenameDialog(
         confirmLabel = "Rename",
         confirmEnabled = name.isNotBlank() && name != currentName,
         onConfirm = { onConfirm(name) },
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
     ) {
         NexarDialogField(
             value = name,
             onValueChange = { name = it },
-            placeholder = "Document name"
+            placeholder = "Document name",
         )
     }
 }
@@ -218,7 +237,7 @@ private fun NexarDialog(
     confirmEnabled: Boolean,
     onConfirm: () -> Unit,
     onDismiss: () -> Unit,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -230,7 +249,7 @@ private fun NexarDialog(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
+                color = MaterialTheme.colorScheme.onSurface,
             )
         },
         text = { content() },
@@ -239,10 +258,11 @@ private fun NexarDialog(
                 onClick = onConfirm,
                 enabled = confirmEnabled,
                 shape = RoundedCornerShape(999.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    disabledContainerColor = MaterialTheme.colorScheme.outline
-                )
+                colors =
+                    ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        disabledContainerColor = MaterialTheme.colorScheme.outline,
+                    ),
             ) {
                 Text(confirmLabel, fontWeight = FontWeight.SemiBold)
             }
@@ -250,15 +270,15 @@ private fun NexarDialog(
         dismissButton = {
             TextButton(
                 onClick = onDismiss,
-                shape = RoundedCornerShape(999.dp)
+                shape = RoundedCornerShape(999.dp),
             ) {
                 Text(
                     "Cancel",
                     color = NexarExtraTheme.colors.foregroundSecondary,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
                 )
             }
-        }
+        },
     )
 }
 
@@ -266,43 +286,47 @@ private fun NexarDialog(
 private fun NexarDialogField(
     value: String,
     onValueChange: (String) -> Unit,
-    placeholder: String
+    placeholder: String,
 ) {
     Surface(
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            NexarExtraTheme.colors.borderSubtle
-        )
+        border =
+            androidx.compose.foundation.BorderStroke(
+                1.dp,
+                NexarExtraTheme.colors.borderSubtle,
+            ),
     ) {
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
             singleLine = true,
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                color = MaterialTheme.colorScheme.onSurface
-            ),
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 14.dp),
+            textStyle =
+                MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+            modifier =
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 14.dp),
             decorationBox = { inner ->
                 if (value.isEmpty()) {
                     Text(
                         text = placeholder,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = NexarExtraTheme.colors.foregroundMuted
+                        color = NexarExtraTheme.colors.foregroundMuted,
                     )
                 }
                 inner()
-            }
+            },
         )
     }
 }
 
 @Composable
+@Suppress("FunctionName")
 expect fun ScannerBridge(
     onResult: (ScannedDocument) -> Unit,
-    onCancel: () -> Unit
+    onCancel: () -> Unit,
 )

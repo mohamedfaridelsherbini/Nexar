@@ -6,13 +6,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 class ObserveDocumentsUseCase(
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
     operator fun invoke(): Flow<List<ScannedDocument>> = documentRepository.observeDocuments()
 }
 
 class AddScannedDocumentUseCase(
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
     suspend operator fun invoke(document: ScannedDocument) {
         documentRepository.saveDocument(document)
@@ -20,9 +20,12 @@ class AddScannedDocumentUseCase(
 }
 
 class RenameDocumentUseCase(
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
-    suspend operator fun invoke(documentId: String, newName: String) {
+    suspend operator fun invoke(
+        documentId: String,
+        newName: String,
+    ) {
         val sanitizedName = newName.trim()
         if (sanitizedName.isBlank()) return
         documentRepository.renameDocument(documentId, sanitizedName)
@@ -30,7 +33,7 @@ class RenameDocumentUseCase(
 }
 
 class DeleteDocumentUseCase(
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
     suspend operator fun invoke(document: ScannedDocument) {
         documentRepository.deleteDocument(document)
@@ -38,7 +41,7 @@ class DeleteDocumentUseCase(
 }
 
 class UpdateDocumentUseCase(
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
     suspend operator fun invoke(document: ScannedDocument) {
         documentRepository.updateDocument(document)
@@ -46,7 +49,7 @@ class UpdateDocumentUseCase(
 }
 
 class MarkExportedUseCase(
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
     suspend operator fun invoke(id: String) {
         documentRepository.markExported(id)
@@ -54,7 +57,7 @@ class MarkExportedUseCase(
 }
 
 class ToggleStarUseCase(
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
     suspend operator fun invoke(document: ScannedDocument) {
         documentRepository.updateDocument(document.copy(isStarred = !document.isStarred))
@@ -69,7 +72,7 @@ class ToggleStarUseCase(
  * Returns an empty Flow for blank queries so callers never need to guard against it.
  */
 class SearchDocumentsUseCase(
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
     operator fun invoke(query: String): Flow<List<ScannedDocument>> {
         if (query.isBlank()) return flowOf(emptyList())

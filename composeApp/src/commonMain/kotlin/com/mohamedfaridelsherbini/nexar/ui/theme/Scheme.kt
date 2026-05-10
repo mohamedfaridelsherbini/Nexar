@@ -15,7 +15,7 @@ data class NexarExtraColors(
     val borderPrimary: Color = Color.Unspecified,
     val borderSubtle: Color = Color.Unspecified,
     val foregroundSecondary: Color = Color.Unspecified,
-    val foregroundMuted: Color = Color.Unspecified
+    val foregroundMuted: Color = Color.Unspecified,
 )
 
 val LocalNexarExtraColors = staticCompositionLocalOf { NexarExtraColors() }
@@ -27,58 +27,62 @@ object NexarExtraTheme {
         get() = LocalNexarExtraColors.current
 }
 
-val NexarLightColorScheme = lightColorScheme(
-    primary = NexarAccentPrimary,
-    onPrimary = NexarSurfaceSecondary,
-    primaryContainer = NexarAccentPrimary,
-    onPrimaryContainer = NexarSurfaceSecondary,
-    secondary = NexarForegroundSecondary,
-    onSecondary = NexarSurfaceSecondary,
-    background = NexarSurfacePrimary,
-    onBackground = NexarForegroundPrimary,
-    surface = NexarSurfacePrimary,
-    onSurface = NexarForegroundPrimary,
-    surfaceVariant = NexarSurfaceSecondary,
-    onSurfaceVariant = NexarForegroundSecondary,
-    outline = NexarBorderPrimary,
-    outlineVariant = NexarBorderSubtle,
-    error = NexarError,
-    onError = NexarSurfaceSecondary
-)
+val NexarLightColorScheme =
+    lightColorScheme(
+        primary = NexarAccentPrimary,
+        onPrimary = NexarSurfaceSecondary,
+        primaryContainer = NexarAccentPrimary,
+        onPrimaryContainer = NexarSurfaceSecondary,
+        secondary = NexarForegroundSecondary,
+        onSecondary = NexarSurfaceSecondary,
+        background = NexarSurfacePrimary,
+        onBackground = NexarForegroundPrimary,
+        surface = NexarSurfacePrimary,
+        onSurface = NexarForegroundPrimary,
+        surfaceVariant = NexarSurfaceSecondary,
+        onSurfaceVariant = NexarForegroundSecondary,
+        outline = NexarBorderPrimary,
+        outlineVariant = NexarBorderSubtle,
+        error = NexarError,
+        onError = NexarSurfaceSecondary,
+    )
 
-val NexarLightExtraColors = NexarExtraColors(
-    warning = NexarWarning,
-    success = NexarSuccess,
-    borderPrimary = NexarBorderPrimary,
-    borderSubtle = NexarBorderSubtle,
-    foregroundSecondary = NexarForegroundSecondary,
-    foregroundMuted = NexarForegroundMuted
-)
+val NexarLightExtraColors =
+    NexarExtraColors(
+        warning = NexarWarning,
+        success = NexarSuccess,
+        borderPrimary = NexarBorderPrimary,
+        borderSubtle = NexarBorderSubtle,
+        foregroundSecondary = NexarForegroundSecondary,
+        foregroundMuted = NexarForegroundMuted,
+    )
 
-val NexarDarkColorScheme = darkColorScheme(
-    primary = NexarDarkAccentPrimary,
-    onPrimary = NexarDarkSurfacePrimary,
-    primaryContainer = NexarDarkAccentPrimary,
-    onPrimaryContainer = NexarDarkSurfacePrimary,
-    secondary = NexarDarkForegroundSecondary,
-    onSecondary = NexarDarkSurfacePrimary,
-    background = NexarDarkSurfacePrimary,
-    onBackground = NexarDarkForegroundPrimary,
-    surface = NexarDarkSurfacePrimary,
-    onSurface = NexarDarkForegroundPrimary,
-    surfaceVariant = NexarDarkSurfaceSecondary,
-    onSurfaceVariant = NexarDarkForegroundSecondary,
-    outline = NexarDarkBorderPrimary,
-    outlineVariant = NexarDarkBorderSubtle,
-    error = NexarDarkError,
-    onError = NexarDarkSurfacePrimary
-)
+val NexarDarkColorScheme =
+    darkColorScheme(
+        primary = NexarDarkAccentPrimary,
+        onPrimary = NexarDarkSurfacePrimary,
+        primaryContainer = NexarDarkAccentPrimary,
+        onPrimaryContainer = NexarDarkSurfacePrimary,
+        secondary = NexarDarkForegroundSecondary,
+        onSecondary = NexarDarkSurfacePrimary,
+        background = NexarDarkSurfacePrimary,
+        onBackground = NexarDarkForegroundPrimary,
+        surface = NexarDarkSurfacePrimary,
+        onSurface = NexarDarkForegroundPrimary,
+        surfaceVariant = NexarDarkSurfaceSecondary,
+        onSurfaceVariant = NexarDarkForegroundSecondary,
+        outline = NexarDarkBorderPrimary,
+        outlineVariant = NexarDarkBorderSubtle,
+        error = NexarDarkError,
+        onError = NexarDarkSurfacePrimary,
+    )
 
-val NexarDarkExtraColors = NexarExtraColors(
-    warning = NexarDarkWarning,
-    success = NexarDarkSuccess,
-    borderPrimary = NexarDarkBorderPrimary,
-    borderSubtle = NexarDarkBorderSubtle,
-    foregroundSecondary = NexarDarkForegroundSecondary,
-    foregroundMuted = NexarDarkForegroundMuted
-)
+val NexarDarkExtraColors =
+    NexarExtraColors(
+        warning = NexarDarkWarning,
+        success = NexarDarkSuccess,
+        borderPrimary = NexarDarkBorderPrimary,
+        borderSubtle = NexarDarkBorderSubtle,
+        foregroundSecondary = NexarDarkForegroundSecondary,
+        foregroundMuted = NexarDarkForegroundMuted,
+    )

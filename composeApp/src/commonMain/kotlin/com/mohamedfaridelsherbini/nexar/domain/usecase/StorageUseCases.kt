@@ -6,13 +6,13 @@ import com.mohamedfaridelsherbini.nexar.domain.repository.StorageRepository
 import kotlinx.coroutines.flow.Flow
 
 class ObserveStorageLocationUseCase(
-    private val storageRepository: StorageRepository
+    private val storageRepository: StorageRepository,
 ) {
     operator fun invoke(): Flow<String?> = storageRepository.observeStorageLocation()
 }
 
 class SetStorageLocationUseCase(
-    private val storageRepository: StorageRepository
+    private val storageRepository: StorageRepository,
 ) {
     operator fun invoke(uri: String) {
         val sanitizedUri = uri.trim()
@@ -23,7 +23,7 @@ class SetStorageLocationUseCase(
 
 class SaveDocumentToStorageUseCase(
     private val storageRepository: StorageRepository,
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
     suspend operator fun invoke(document: ScannedDocument): Boolean {
         if (document.pdfUri == null) return false
@@ -34,7 +34,7 @@ class SaveDocumentToStorageUseCase(
 }
 
 class CreateFolderUseCase(
-    private val storageRepository: StorageRepository
+    private val storageRepository: StorageRepository,
 ) {
     suspend operator fun invoke(folderName: String): Boolean {
         val sanitizedName = folderName.trim()
@@ -45,7 +45,7 @@ class CreateFolderUseCase(
 
 class BatchExportUseCase(
     private val storageRepository: StorageRepository,
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
     /** Returns Pair(successCount, failedCount). */
     suspend operator fun invoke(documents: List<ScannedDocument>): Pair<Int, Int> {
@@ -84,5 +84,5 @@ data class DashboardUseCases(
     val setStorageLocation: SetStorageLocationUseCase,
     val saveDocumentToStorage: SaveDocumentToStorageUseCase,
     val batchExport: BatchExportUseCase,
-    val createFolder: CreateFolderUseCase
+    val createFolder: CreateFolderUseCase,
 )

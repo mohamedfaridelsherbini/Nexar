@@ -8,7 +8,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 
 class FakeDocumentRepository : DocumentRepository {
-
     private val _documents = MutableStateFlow<List<ScannedDocument>>(emptyList())
 
     /** The most recent argument passed to [updateDocument]. */
@@ -34,7 +33,10 @@ class FakeDocumentRepository : DocumentRepository {
         _documents.update { docs -> docs.map { if (it.id == document.id) document else it } }
     }
 
-    override suspend fun renameDocument(id: String, newName: String) {
+    override suspend fun renameDocument(
+        id: String,
+        newName: String,
+    ) {
         _documents.update { docs ->
             docs.map { if (it.id == id) it.copy(name = newName) else it }
         }
@@ -57,13 +59,16 @@ class FakeDocumentRepository : DocumentRepository {
     override fun searchDocuments(ftsQuery: String): Flow<List<ScannedDocument>> =
         _documents.map { docs ->
             val terms = ftsQuery.replace("*", "").trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
-            if (terms.isEmpty()) docs
-            else docs.filter { doc ->
-                terms.any { term ->
-                    doc.name.contains(term, ignoreCase = true) ||
-                        doc.ocrText.contains(term, ignoreCase = true) ||
-                        doc.category.displayName.contains(term, ignoreCase = true) ||
-                        doc.tags.any { it.contains(term, ignoreCase = true) }
+            if (terms.isEmpty()) {
+                docs
+            } else {
+                docs.filter { doc ->
+                    terms.any { term ->
+                        doc.name.contains(term, ignoreCase = true) ||
+                            doc.ocrText.contains(term, ignoreCase = true) ||
+                            doc.category.displayName.contains(term, ignoreCase = true) ||
+                            doc.tags.any { it.contains(term, ignoreCase = true) }
+                    }
                 }
             }
         }

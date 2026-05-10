@@ -5,58 +5,69 @@ import com.mohamedfaridelsherbini.nexar.domain.model.DocumentCategory
 private data class ClassificationRule(
     val category: DocumentCategory,
     val label: String,
-    val keywords: Set<String>
+    val keywords: Set<String>,
 )
 
-private val classificationRules = listOf(
-    ClassificationRule(
-        DocumentCategory.IdDocument, "id", setOf(
-            "passport", "national id", "identity card", "driver's license",
-            "driving licence", "date of birth", "nationality", "place of birth",
-            "license no", "id number", "personal no", "sex", "issuing authority",
-            "expiry date", "expiration date", "mrz", "bearer"
-        )
-    ),
-    ClassificationRule(
-        DocumentCategory.Contract, "contract", setOf(
-            "agreement", "contract", "terms and conditions", "hereby agrees",
-            "parties agree", "binding agreement", "obligation", "whereas",
-            "in witness whereof", "hereinafter", "indemnification", "arbitration",
-            "governing law", "clause", "schedule", "exhibit", "addendum"
-        )
-    ),
-    ClassificationRule(
-        DocumentCategory.Medical, "medical", setOf(
-            "patient", "diagnosis", "prescription", "doctor", "physician",
-            "hospital", "clinic", "medication", "dosage", "mg", "ml",
-            "treatment", "referral", "lab result", "blood pressure", "test result",
-            "medical record", "healthcare"
-        )
-    ),
-    ClassificationRule(
-        DocumentCategory.Invoice, "invoice", setOf(
-            "invoice", "bill to", "billing address", "due date", "payment due",
-            "invoice number", "inv #", "invoice #", "vat", "net amount",
-            "line item", "unit price", "qty", "quantity", "subtotal", "balance due"
-        )
-    ),
-    ClassificationRule(
-        DocumentCategory.Receipt, "receipt", setOf(
-            "receipt", "subtotal", "cashier", "store", "thank you for shopping",
-            "change", "loyalty", "supermarket", "hypermarket", "carrefour", "walmart",
-            "grocery", "amount due", "amount paid", "your total"
-        )
+private val classificationRules =
+    listOf(
+        ClassificationRule(
+            DocumentCategory.IdDocument,
+            "id",
+            setOf(
+                "passport", "national id", "identity card", "driver's license",
+                "driving licence", "date of birth", "nationality", "place of birth",
+                "license no", "id number", "personal no", "sex", "issuing authority",
+                "expiry date", "expiration date", "mrz", "bearer",
+            ),
+        ),
+        ClassificationRule(
+            DocumentCategory.Contract,
+            "contract",
+            setOf(
+                "agreement", "contract", "terms and conditions", "hereby agrees",
+                "parties agree", "binding agreement", "obligation", "whereas",
+                "in witness whereof", "hereinafter", "indemnification", "arbitration",
+                "governing law", "clause", "schedule", "exhibit", "addendum",
+            ),
+        ),
+        ClassificationRule(
+            DocumentCategory.Medical,
+            "medical",
+            setOf(
+                "patient", "diagnosis", "prescription", "doctor", "physician",
+                "hospital", "clinic", "medication", "dosage", "mg", "ml",
+                "treatment", "referral", "lab result", "blood pressure", "test result",
+                "medical record", "healthcare",
+            ),
+        ),
+        ClassificationRule(
+            DocumentCategory.Invoice,
+            "invoice",
+            setOf(
+                "invoice", "bill to", "billing address", "due date", "payment due",
+                "invoice number", "inv #", "invoice #", "vat", "net amount",
+                "line item", "unit price", "qty", "quantity", "subtotal", "balance due",
+            ),
+        ),
+        ClassificationRule(
+            DocumentCategory.Receipt,
+            "receipt",
+            setOf(
+                "receipt", "subtotal", "cashier", "store", "thank you for shopping",
+                "change", "loyalty", "supermarket", "hypermarket", "carrefour", "walmart",
+                "grocery", "amount due", "amount paid", "your total",
+            ),
+        ),
     )
-)
 
 object DocumentClassifier : ClassifierService {
-
     override fun classify(ocrText: String): DocumentCategory {
         if (ocrText.isBlank()) return DocumentCategory.Other
         val lower = ocrText.lowercase()
-        val best = classificationRules.maxByOrNull { rule ->
-            rule.keywords.count { lower.contains(it) }
-        } ?: return DocumentCategory.Other
+        val best =
+            classificationRules.maxByOrNull { rule ->
+                rule.keywords.count { lower.contains(it) }
+            } ?: return DocumentCategory.Other
         val score = best.keywords.count { lower.contains(it) }
         return if (score >= 2) best.category else DocumentCategory.Other
     }
@@ -72,8 +83,11 @@ object DocumentClassifier : ClassifierService {
 }
 
 object DocumentNamer : NamingService {
-
-    override fun suggest(ocrText: String, category: DocumentCategory, dateMillis: Long): String? {
+    override fun suggest(
+        ocrText: String,
+        category: DocumentCategory,
+        dateMillis: Long,
+    ): String? {
         if (ocrText.isBlank()) return null
         val dateStr = formatDate(dateMillis)
         val excerpt = extractMeaningfulExcerpt(ocrText)

@@ -4,7 +4,17 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -12,9 +22,31 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudUpload
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material3.Button
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.InputChip
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,7 +68,7 @@ fun DocumentDetailScreen(
     onExport: (ScannedDocument) -> Unit,
     onShare: ((ScannedDocument) -> Unit)?,
     onPreview: ((ScannedDocument) -> Unit)?,
-    exportEnabled: Boolean
+    exportEnabled: Boolean,
 ) {
     var name by remember(document.id) { mutableStateOf(document.name) }
     var category by remember(document.id) { mutableStateOf(document.category) }
@@ -50,15 +82,16 @@ fun DocumentDetailScreen(
         topBar = {
             Surface(
                 modifier = Modifier.fillMaxWidth(),
-                color = MaterialTheme.colorScheme.surfaceVariant
+                color = MaterialTheme.colorScheme.surfaceVariant,
             ) {
                 Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .statusBarsPadding()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -66,7 +99,7 @@ fun DocumentDetailScreen(
                     Text(
                         "Document Detail",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
                     )
                     if (isDirty) {
                         TextButton(
@@ -75,10 +108,10 @@ fun DocumentDetailScreen(
                                     document.copy(
                                         name = name.trim().ifBlank { document.name },
                                         category = category,
-                                        tags = tags.toList()
-                                    )
+                                        tags = tags.toList(),
+                                    ),
                                 )
-                            }
+                            },
                         ) {
                             Text("Save", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         }
@@ -88,15 +121,16 @@ fun DocumentDetailScreen(
                 }
             }
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = MaterialTheme.colorScheme.background,
     ) { paddingValues ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 24.dp, vertical = 20.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
             // Page thumbnail strip — tap any page to open the full viewer
             val pageCount = document.imageUris.size.coerceAtLeast(1)
@@ -104,59 +138,65 @@ fun DocumentDetailScreen(
 
             Row(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState())
+                modifier =
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
             ) {
                 repeat(pageCount) { index ->
-                    val currentDocument = document.copy(
-                        name = document.name,
-                        category = document.category,
-                        tags = document.tags
-                    )
+                    val currentDocument =
+                        document.copy(
+                            name = document.name,
+                            category = document.category,
+                            tags = document.tags,
+                        )
                     Box(
-                        modifier = Modifier
-                            .size(width = 88.dp, height = 120.dp)
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
-                            .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(12.dp))
-                            .then(
-                                if (canPreview) Modifier.clickable { onPreview.invoke(currentDocument) }
-                                else Modifier
-                            ),
-                        contentAlignment = Alignment.Center
+                        modifier =
+                            Modifier
+                                .size(width = 88.dp, height = 120.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(12.dp))
+                                .then(
+                                    if (canPreview) {
+                                        Modifier.clickable { onPreview.invoke(currentDocument) }
+                                    } else {
+                                        Modifier
+                                    },
+                                ),
+                        contentAlignment = Alignment.Center,
                     ) {
                         if (canPreview) {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(6.dp)
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Visibility,
                                     contentDescription = "View document",
                                     modifier = Modifier.size(28.dp),
-                                    tint = MaterialTheme.colorScheme.primary
+                                    tint = MaterialTheme.colorScheme.primary,
                                 )
                                 Text(
                                     text = "Page ${index + 1}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = NexarExtraTheme.colors.foregroundMuted
+                                    color = NexarExtraTheme.colors.foregroundMuted,
                                 )
                             }
                         } else {
                             Column(
                                 horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.spacedBy(4.dp)
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
                             ) {
                                 NexarLogo(
                                     size = 36.dp,
                                     fieldColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
-                                    accentColor = MaterialTheme.colorScheme.primary
+                                    accentColor = MaterialTheme.colorScheme.primary,
                                 )
                                 Text(
                                     text = "Page ${index + 1}",
                                     style = MaterialTheme.typography.labelSmall,
-                                    color = NexarExtraTheme.colors.foregroundMuted
+                                    color = NexarExtraTheme.colors.foregroundMuted,
                                 )
                             }
                         }
@@ -169,20 +209,22 @@ fun DocumentDetailScreen(
                 Surface(
                     color = MaterialTheme.colorScheme.surfaceVariant,
                     shape = RoundedCornerShape(12.dp),
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 ) {
                     BasicTextField(
                         value = name,
                         onValueChange = { name = it },
                         singleLine = true,
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = MaterialTheme.colorScheme.onSurface
-                        ),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(12.dp))
-                            .padding(14.dp)
+                        textStyle =
+                            MaterialTheme.typography.bodyMedium.copy(
+                                color = MaterialTheme.colorScheme.onSurface,
+                            ),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(12.dp))
+                                .padding(14.dp),
                     )
                 }
             }
@@ -191,52 +233,56 @@ fun DocumentDetailScreen(
             DetailSection(title = "Category") {
                 Box {
                     Surface(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(12.dp)),
+                        modifier =
+                            Modifier
+                                .fillMaxWidth()
+                                .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(12.dp)),
                         shape = RoundedCornerShape(12.dp),
                         color = MaterialTheme.colorScheme.surfaceVariant,
-                        onClick = { showCategoryPicker = true }
+                        onClick = { showCategoryPicker = true },
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
                             ) {
                                 CategoryPill(category)
                                 if (category == DocumentCategory.Other) {
                                     Text(
                                         "Other",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        color = MaterialTheme.colorScheme.onSurface,
                                     )
                                 }
                             }
                             Icon(
                                 Icons.Default.ArrowDropDown,
                                 contentDescription = null,
-                                tint = NexarExtraTheme.colors.foregroundSecondary
+                                tint = NexarExtraTheme.colors.foregroundSecondary,
                             )
                         }
                     }
                     DropdownMenu(
                         expanded = showCategoryPicker,
-                        onDismissRequest = { showCategoryPicker = false }
+                        onDismissRequest = { showCategoryPicker = false },
                     ) {
                         DocumentCategory.entries.forEach { cat ->
                             DropdownMenuItem(
                                 text = { Text(cat.displayName) },
-                                leadingIcon = if (cat == category) {
-                                    { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
-                                } else null,
+                                leadingIcon =
+                                    if (cat == category) {
+                                        { Icon(Icons.Default.Check, null, modifier = Modifier.size(16.dp)) }
+                                    } else {
+                                        null
+                                    },
                                 onClick = {
                                     category = cat
                                     showCategoryPicker = false
-                                }
+                                },
                             )
                         }
                     }
@@ -249,34 +295,36 @@ fun DocumentDetailScreen(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Surface(
-                            modifier = Modifier
-                                .weight(1f)
-                                .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(12.dp)),
+                            modifier =
+                                Modifier
+                                    .weight(1f)
+                                    .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(12.dp)),
                             shape = RoundedCornerShape(12.dp),
-                            color = MaterialTheme.colorScheme.surfaceVariant
+                            color = MaterialTheme.colorScheme.surfaceVariant,
                         ) {
                             BasicTextField(
                                 value = tagInput,
                                 onValueChange = { tagInput = it },
                                 singleLine = true,
                                 cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-                                textStyle = MaterialTheme.typography.bodyMedium.copy(
-                                    color = MaterialTheme.colorScheme.onSurface
-                                ),
+                                textStyle =
+                                    MaterialTheme.typography.bodyMedium.copy(
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                    ),
                                 modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp),
                                 decorationBox = { inner ->
                                     if (tagInput.isEmpty()) {
                                         Text(
                                             "Add a tag…",
                                             style = MaterialTheme.typography.bodyMedium,
-                                            color = NexarExtraTheme.colors.foregroundMuted
+                                            color = NexarExtraTheme.colors.foregroundMuted,
                                         )
                                     }
                                     inner()
-                                }
+                                },
                             )
                         }
                         IconButton(
@@ -287,10 +335,11 @@ fun DocumentDetailScreen(
                                     tagInput = ""
                                 }
                             },
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primary)
+                            modifier =
+                                Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primary),
                         ) {
                             Icon(Icons.Default.Add, contentDescription = "Add tag", tint = Color.White)
                         }
@@ -298,7 +347,7 @@ fun DocumentDetailScreen(
                     if (tags.isNotEmpty()) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier.horizontalScroll(rememberScrollState())
+                            modifier = Modifier.horizontalScroll(rememberScrollState()),
                         ) {
                             tags.forEach { tag ->
                                 InputChip(
@@ -306,8 +355,12 @@ fun DocumentDetailScreen(
                                     onClick = { tags = tags.filter { it != tag }.toMutableList() },
                                     label = { Text(tag, style = MaterialTheme.typography.labelSmall) },
                                     trailingIcon = {
-                                        Icon(Icons.Default.Close, contentDescription = "Remove", modifier = Modifier.size(14.dp))
-                                    }
+                                        Icon(
+                                            Icons.Default.Close,
+                                            contentDescription = "Remove",
+                                            modifier = Modifier.size(14.dp),
+                                        )
+                                    },
                                 )
                             }
                         }
@@ -332,30 +385,31 @@ fun DocumentDetailScreen(
             }
 
             // Action buttons
-            val currentDocument = document.copy(
-                name = name.trim().ifBlank { document.name },
-                category = category,
-                tags = tags.toList()
-            )
+            val currentDocument =
+                document.copy(
+                    name = name.trim().ifBlank { document.name },
+                    category = category,
+                    tags = tags.toList(),
+                )
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 if (exportEnabled) {
                     Button(
                         onClick = { onExport(currentDocument) },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Icon(
                             if (document.isExportedToStorage) Icons.Default.CheckCircle else Icons.Default.CloudUpload,
                             contentDescription = null,
-                            modifier = Modifier.size(16.dp)
+                            modifier = Modifier.size(16.dp),
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
                             if (document.isExportedToStorage) "Re-export" else "Export",
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
                         )
                     }
                 }
@@ -363,7 +417,7 @@ fun DocumentDetailScreen(
                     OutlinedButton(
                         onClick = { onShare(currentDocument) },
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Icon(Icons.Default.Share, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
@@ -390,41 +444,45 @@ private fun epochMillisToYear(millis: Long): String {
 @Composable
 private fun DetailSection(
     title: String,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Text(
             text = title,
             style = MaterialTheme.typography.labelLarge,
             fontWeight = FontWeight.SemiBold,
-            color = NexarExtraTheme.colors.foregroundSecondary
+            color = NexarExtraTheme.colors.foregroundSecondary,
         )
         content()
     }
 }
 
 @Composable
-private fun InfoRow(label: String, value: String) {
+private fun InfoRow(
+    label: String,
+    value: String,
+) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(8.dp))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(MaterialTheme.colorScheme.surface)
+                .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(8.dp))
+                .padding(horizontal = 12.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = NexarExtraTheme.colors.foregroundSecondary
+            color = NexarExtraTheme.colors.foregroundSecondary,
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurface,
         )
     }
 }

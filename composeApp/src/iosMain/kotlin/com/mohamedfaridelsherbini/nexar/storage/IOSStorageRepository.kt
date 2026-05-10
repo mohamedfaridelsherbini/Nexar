@@ -2,13 +2,13 @@ package com.mohamedfaridelsherbini.nexar.storage
 
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import com.mohamedfaridelsherbini.nexar.domain.repository.StorageRepository
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSURL
+import platform.Foundation.NSUserDefaults
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import platform.Foundation.NSFileManager
-import platform.Foundation.NSURL
-import platform.Foundation.NSUserDefaults
 
 @OptIn(ExperimentalForeignApi::class)
 class IOSStorageRepository : StorageRepository {
@@ -39,14 +39,14 @@ class IOSStorageRepository : StorageRepository {
                     url = yearFolder,
                     withIntermediateDirectories = true,
                     attributes = null,
-                    error = null
+                    error = null,
                 )
                 val fileName = document.exportFileName()
                 val destUrl = yearFolder.URLByAppendingPathComponent(fileName) ?: return false
                 NSFileManager.defaultManager.copyItemAtURL(
                     srcURL = sourceUrl,
                     toURL = destUrl,
-                    error = null
+                    error = null,
                 )
             } finally {
                 rootUrl.stopAccessingSecurityScopedResource()
@@ -66,7 +66,7 @@ class IOSStorageRepository : StorageRepository {
                     url = folderUrl,
                     withIntermediateDirectories = true,
                     attributes = null,
-                    error = null
+                    error = null,
                 )
             } finally {
                 rootUrl.stopAccessingSecurityScopedResource()

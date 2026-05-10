@@ -1,7 +1,7 @@
 package com.mohamedfaridelsherbini.nexar.navigation
 
-import kotlinx.serialization.Serializable
 import androidx.navigation3.runtime.NavKey
+import kotlinx.serialization.Serializable
 
 @Serializable
 sealed interface Route : NavKey

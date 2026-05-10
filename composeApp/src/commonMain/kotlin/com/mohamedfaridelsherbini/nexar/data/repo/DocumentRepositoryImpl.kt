@@ -11,11 +11,9 @@ import kotlinx.coroutines.flow.map
 
 class DocumentRepositoryImpl(
     private val dao: DocumentDao,
-    private val ftsDao: DocumentFtsDao
+    private val ftsDao: DocumentFtsDao,
 ) : DocumentRepository {
-
-    override fun observeDocuments() =
-        dao.getAllDocuments().map { entities -> entities.map { it.toDomain() } }
+    override fun observeDocuments() = dao.getAllDocuments().map { entities -> entities.map { it.toDomain() } }
 
     override suspend fun saveDocument(document: ScannedDocument) {
         dao.insertDocument(DocumentEntity.fromDomain(document))
@@ -27,7 +25,10 @@ class DocumentRepositoryImpl(
         syncFts(document)
     }
 
-    override suspend fun renameDocument(id: String, newName: String) {
+    override suspend fun renameDocument(
+        id: String,
+        newName: String,
+    ) {
         dao.renameDocument(id, newName)
         // Re-sync the FTS row using the freshly updated entity from the DB
         dao.getDocumentById(id)?.toDomain()?.let { syncFts(it) }

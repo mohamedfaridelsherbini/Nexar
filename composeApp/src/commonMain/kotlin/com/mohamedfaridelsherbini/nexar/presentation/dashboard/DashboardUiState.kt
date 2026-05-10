@@ -12,27 +12,30 @@ enum class DashboardFilter {
     Invoice,
     IdDocument,
     Contract,
-    Medical;
+    Medical,
+    ;
 
-    fun toCategory(): DocumentCategory? = when (this) {
-        Receipt -> DocumentCategory.Receipt
-        Invoice -> DocumentCategory.Invoice
-        IdDocument -> DocumentCategory.IdDocument
-        Contract -> DocumentCategory.Contract
-        Medical -> DocumentCategory.Medical
-        else -> null
-    }
+    fun toCategory(): DocumentCategory? =
+        when (this) {
+            Receipt -> DocumentCategory.Receipt
+            Invoice -> DocumentCategory.Invoice
+            IdDocument -> DocumentCategory.IdDocument
+            Contract -> DocumentCategory.Contract
+            Medical -> DocumentCategory.Medical
+            else -> null
+        }
 
-    val label: String get() = when (this) {
-        All -> "All"
-        NeedsExport -> "Needs export"
-        Starred -> "Starred"
-        Receipt -> "Receipts"
-        Invoice -> "Invoices"
-        IdDocument -> "IDs"
-        Contract -> "Contracts"
-        Medical -> "Medical"
-    }
+    val label: String get() =
+        when (this) {
+            All -> "All"
+            NeedsExport -> "Needs export"
+            Starred -> "Starred"
+            Receipt -> "Receipts"
+            Invoice -> "Invoices"
+            IdDocument -> "IDs"
+            Contract -> "Contracts"
+            Medical -> "Medical"
+        }
 }
 
 data class DashboardUiState(
@@ -48,7 +51,6 @@ data class DashboardUiState(
     val searchQuery: String = "",
     val activeFilter: DashboardFilter = DashboardFilter.All,
     val ocrSheetDocumentId: String? = null,
-    // ── Loading & error ───────────────────────────────────────────────────────
     /** True until the first emission from the document repository arrives. */
     val isLoadingDocuments: Boolean = true,
     /** Id of the document currently being OCR-processed. Null when idle. */

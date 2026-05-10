@@ -6,5 +6,5 @@ import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 @Composable
 expect fun PreviewBridge(
     document: ScannedDocument,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
 )

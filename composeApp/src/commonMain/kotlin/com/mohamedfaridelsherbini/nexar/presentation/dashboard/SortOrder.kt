@@ -4,5 +4,5 @@ enum class SortOrder(val label: String) {
     Newest("Newest first"),
     Oldest("Oldest first"),
     NameAsc("Name A→Z"),
-    CategoryAsc("Category")
+    CategoryAsc("Category"),
 }

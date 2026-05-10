@@ -10,9 +10,10 @@ sealed class NexarError {
     /** Creating a new folder in the export location failed. */
     data object FolderCreationFailed : NexarError()
 
-    fun userMessage(): String = when (this) {
-        is OcrFailed -> "Could not analyse \"$documentName\". The document was saved but OCR failed."
-        is ExportFailed -> "Failed to export \"$documentName\". Check storage permission and try again."
-        FolderCreationFailed -> "Could not create the folder. Check storage permission and try again."
-    }
+    fun userMessage(): String =
+        when (this) {
+            is OcrFailed -> "Could not analyse \"$documentName\". The document was saved but OCR failed."
+            is ExportFailed -> "Failed to export \"$documentName\". Check storage permission and try again."
+            FolderCreationFailed -> "Could not create the folder. Check storage permission and try again."
+        }
 }

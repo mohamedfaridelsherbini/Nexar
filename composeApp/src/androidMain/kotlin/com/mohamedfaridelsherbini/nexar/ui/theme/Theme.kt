@@ -16,19 +16,20 @@ import androidx.core.view.WindowCompat
 actual fun NexarTheme(
     darkTheme: Boolean,
     dynamicColor: Boolean,
-    content: @Composable () -> Unit
+    content: @Composable () -> Unit,
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    val colorScheme =
+        when {
+            dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
+                val context = LocalContext.current
+                if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+            }
+            darkTheme -> NexarDarkColorScheme
+            else -> NexarLightColorScheme
         }
-        darkTheme -> NexarDarkColorScheme
-        else -> NexarLightColorScheme
-    }
-    
+
     val extraColors = if (darkTheme) NexarDarkExtraColors else NexarLightExtraColors
-    
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -43,7 +44,7 @@ actual fun NexarTheme(
         MaterialTheme(
             colorScheme = colorScheme,
             typography = NexarTypography,
-            content = content
+            content = content,
         )
     }
 }

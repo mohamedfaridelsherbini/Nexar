@@ -20,7 +20,7 @@ class ProcessScannedDocumentUseCase(
     private val namer: NamingService,
     private val extractor: ExtractionService,
     private val duplicateDetector: DuplicateDetectionService,
-    private val documentRepository: DocumentRepository
+    private val documentRepository: DocumentRepository,
 ) {
     suspend operator fun invoke(document: ScannedDocument): Boolean {
         if (document.imageUris.isEmpty()) return false
@@ -28,21 +28,24 @@ class ProcessScannedDocumentUseCase(
         val ocrText = ocrProcessor.extractText(document.imageUris)
         val category = classifier.classify(ocrText)
         val tags = classifier.extractTags(ocrText)
-        val suggestedName = if (!document.ocrProcessed) {
-            namer.suggest(ocrText, category, document.dateMillis) ?: document.name
-        } else {
-            document.name
-        }
+        val suggestedName =
+            if (!document.ocrProcessed) {
+                namer.suggest(ocrText, category, document.dateMillis) ?: document.name
+            } else {
+                document.name
+            }
         val amount = extractor.extractAmount(ocrText)
         val date = extractor.extractDate(ocrText)
 
         // Fresh list from repository (excludes the just-saved doc by id) to avoid stale-read race
-        val existingDocs = documentRepository.observeDocuments().first()
-            .filter { it.id != document.id }
-        val duplicateId = duplicateDetector.findDuplicate(
-            document.copy(ocrText = ocrText),
-            existingDocs
-        )
+        val existingDocs =
+            documentRepository.observeDocuments().first()
+                .filter { it.id != document.id }
+        val duplicateId =
+            duplicateDetector.findDuplicate(
+                document.copy(ocrText = ocrText),
+                existingDocs,
+            )
 
         documentRepository.updateDocument(
             document.copy(
@@ -53,8 +56,8 @@ class ProcessScannedDocumentUseCase(
                 ocrProcessed = true,
                 extractedAmount = amount,
                 extractedDate = date,
-                duplicateOfId = duplicateId
-            )
+                duplicateOfId = duplicateId,
+            ),
         )
         return duplicateId != null
     }

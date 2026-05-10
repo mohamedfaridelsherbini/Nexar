@@ -7,7 +7,7 @@ data class StorageAnalytics(
     val totalBytes: Long,
     val perCategory: Map<DocumentCategory, Long>,
     val totalDocuments: Int,
-    val exportedDocuments: Int
+    val exportedDocuments: Int,
 )
 
 /**
@@ -32,8 +32,7 @@ class StorageAnalyticsUseCase {
             totalBytes = total,
             perCategory = perCat,
             totalDocuments = documents.size,
-            exportedDocuments = documents.count { it.isExportedToStorage }
+            exportedDocuments = documents.count { it.isExportedToStorage },
         )
     }
 }
-

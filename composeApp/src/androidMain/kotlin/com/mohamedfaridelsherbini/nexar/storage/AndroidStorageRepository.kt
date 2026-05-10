@@ -2,18 +2,20 @@ package com.mohamedfaridelsherbini.nexar.storage
 
 import android.content.Context
 import android.net.Uri
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import com.mohamedfaridelsherbini.nexar.domain.repository.StorageRepository
 import com.mohamedfaridelsherbini.nexar.widget.NexarWidgetProvider
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import java.io.InputStream
 import java.io.OutputStream
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 class AndroidStorageRepository(private val context: Context) : StorageRepository {
     private val prefs = context.getSharedPreferences("nexar_storage", Context.MODE_PRIVATE)
@@ -22,18 +24,18 @@ class AndroidStorageRepository(private val context: Context) : StorageRepository
     override fun observeStorageLocation(): Flow<String?> = _storageLocation.asStateFlow()
 
     override fun setStorageLocation(uri: String) {
-        prefs.edit().putString("storage_uri", uri).apply()
+        prefs.edit { putString("storage_uri", uri) }
         _storageLocation.value = uri
     }
 
     override suspend fun saveDocument(document: ScannedDocument): Boolean {
         val sourceUri = document.pdfUri ?: return false
         val rootUriString = _storageLocation.value ?: return false
-        val rootUri = Uri.parse(rootUriString)
+        val rootUri = rootUriString.toUri()
         val rootDoc = DocumentFile.fromTreeUri(context, rootUri) ?: return false
         if (!rootDoc.canWrite()) {
             _storageLocation.value = null
-            prefs.edit().remove("storage_uri").apply()
+            prefs.edit { remove("storage_uri") }
             return false
         }
 
@@ -62,17 +64,20 @@ class AndroidStorageRepository(private val context: Context) : StorageRepository
 
     override suspend fun createFolder(folderName: String): Boolean {
         val rootUriString = _storageLocation.value ?: return false
-        val rootUri = Uri.parse(rootUriString)
+        val rootUri = rootUriString.toUri()
         val rootDoc = DocumentFile.fromTreeUri(context, rootUri) ?: return false
         if (!rootDoc.canWrite()) {
             _storageLocation.value = null
-            prefs.edit().remove("storage_uri").apply()
+            prefs.edit { remove("storage_uri") }
             return false
         }
         return rootDoc.createDirectory(folderName) != null
     }
 
-    private fun DocumentFile.findOrCreate(name: String, isDir: Boolean): DocumentFile? {
+    private fun DocumentFile.findOrCreate(
+        name: String,
+        isDir: Boolean,
+    ): DocumentFile? {
         return findFile(name) ?: if (isDir) createDirectory(name) else createFile("application/pdf", name)
     }
 }

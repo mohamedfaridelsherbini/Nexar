@@ -8,7 +8,6 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class DocumentNamerTest {
-
     // Fixed epoch for 2024-01-01 (1704067200000 ms)
     private val jan2024 = 1_704_067_200_000L
 

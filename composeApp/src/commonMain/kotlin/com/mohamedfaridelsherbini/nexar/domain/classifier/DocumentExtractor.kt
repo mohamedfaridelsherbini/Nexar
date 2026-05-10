@@ -1,23 +1,24 @@
 package com.mohamedfaridelsherbini.nexar.domain.classifier
 
 object DocumentExtractor : ExtractionService {
+    private val amountPatterns =
+        listOf(
+            Regex("""[$£€]\s*[\d,]+\.?\d*"""),
+            Regex("""[\d,]+\.\d{2}\s*[$£€]"""),
+            Regex("""(?i)total[:\s]+[$£€]?\s*([\d,]+\.?\d*)"""),
+            Regex("""(?i)amount[:\s]+[$£€]?\s*([\d,]+\.?\d*)"""),
+            Regex("""(?i)subtotal[:\s]+[$£€]?\s*([\d,]+\.?\d*)"""),
+            Regex("""[\d]{1,3}(?:,\d{3})*\.\d{2}"""),
+        )
 
-    private val amountPatterns = listOf(
-        Regex("""[$£€]\s*[\d,]+\.?\d*"""),
-        Regex("""[\d,]+\.\d{2}\s*[$£€]"""),
-        Regex("""(?i)total[:\s]+[$£€]?\s*([\d,]+\.?\d*)"""),
-        Regex("""(?i)amount[:\s]+[$£€]?\s*([\d,]+\.?\d*)"""),
-        Regex("""(?i)subtotal[:\s]+[$£€]?\s*([\d,]+\.?\d*)"""),
-        Regex("""[\d]{1,3}(?:,\d{3})*\.\d{2}""")
-    )
-
-    private val datePatterns = listOf(
-        Regex("""\d{1,2}/\d{1,2}/\d{2,4}"""),
-        Regex("""\d{4}-\d{2}-\d{2}"""),
-        Regex("""\d{1,2}-\d{1,2}-\d{2,4}"""),
-        Regex("""(?i)(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}"""),
-        Regex("""(?i)\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{4}""")
-    )
+    private val datePatterns =
+        listOf(
+            Regex("""\d{1,2}/\d{1,2}/\d{2,4}"""),
+            Regex("""\d{4}-\d{2}-\d{2}"""),
+            Regex("""\d{1,2}-\d{1,2}-\d{2,4}"""),
+            Regex("""(?i)(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4}"""),
+            Regex("""(?i)\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s+\d{4}"""),
+        )
 
     override fun extractAmount(ocrText: String): String? {
         if (ocrText.isBlank()) return null

@@ -18,7 +18,7 @@ A unified source of truth for Nexar's strategic horizons and tactical engineerin
 
 | Priority | Feature | Notes | Status | Owner | Effort | Target |
 |:---:|---|---|:---:|:---:|:---:|:---:|
-| **P1** | iOS interaction stability | Eliminate remaining scan-button shadow/highlight rendering glitches across SwiftUI and Compose interop surfaces. | in_progress | TBD | S | near |
+| **P1** | iOS interaction stability | Eliminate remaining scan-button shadow/highlight rendering glitches across SwiftUI and Compose interop surfaces. | done | TBD | S | near |
 | **P1** | Trash / restore | Soft-delete with 30-day restore window. | todo | TBD | M | near |
 | **P1** | Bulk actions | Multi-select export, delete, tag, and share. | todo | TBD | M | near |
 | **P1** | Permissions health | Camera/files/notifications status + deep links to settings. | todo | TBD | S | near |

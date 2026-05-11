@@ -6,6 +6,14 @@ This directory follows **Gemini in Android Studio — Agent Mode skills**, as do
 
 Per that guide, import skills by placing them under **`.skills/`** or **`.agent/skills/`** at the **project root**. This repo uses **`.agent/skills/`** next to existing `.agent/` metadata.
 
+## Repo convention
+
+Every new project skill must be added in all four AI locations:
+- **`.agent/skills/`** as the canonical source
+- **`.cursor/skills/`** as a symlink to the `.agent` skill
+- **`.codex/skills/`** as a symlink to the `.agent` skill
+- **`.claude/skills/`** as a symlink to the `.agent` skill
+
 ## Layout
 
 Each capability is a folder with a **`SKILL.md`** file (YAML frontmatter + instructions), optionally `reference.md`.
@@ -22,6 +30,14 @@ Each capability is a folder with a **`SKILL.md`** file (YAML frontmatter + instr
 ## Cursor IDE
 
 Cursor loads project skills from **`.cursor/skills/`**. Those entries are **symlinks** to this directory so one source of truth remains **`.agent/skills/`**.
+
+## Codex
+
+Codex reads matching repo-local symlinks from **`.codex/skills/`** so the canonical content remains in **`.agent/skills/`**.
+
+## Claude
+
+Claude reads matching repo-local symlinks from **`.claude/skills/`** so the canonical content remains in **`.agent/skills/`**.
 
 ## Personal (all projects)
 

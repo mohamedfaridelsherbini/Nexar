@@ -59,6 +59,8 @@ data class DashboardUiState(
     val exportingDocumentId: String? = null,
     /** True while a batch export is running. */
     val isBatchExporting: Boolean = false,
+    val isSelectionMode: Boolean = false,
+    val selectedDocumentIds: Set<String> = emptySet(),
     /** Non-null when an operation failed. Cleared by [DashboardViewModel.onErrorDismissed]. */
     val error: NexarError? = null,
 )

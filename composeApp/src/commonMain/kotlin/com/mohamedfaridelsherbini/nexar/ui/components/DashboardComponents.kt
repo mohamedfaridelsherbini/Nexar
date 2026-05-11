@@ -15,6 +15,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
@@ -39,6 +40,7 @@ import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material.icons.automirrored.filled.TextSnippet
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Checklist
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.ContentCopy
@@ -600,16 +602,42 @@ fun SwipeableDocumentCard(
     modifier: Modifier = Modifier,
     isProcessing: Boolean = false,
     isExporting: Boolean = false,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
     onPreviewClick: () -> Unit,
     onRenameClick: () -> Unit,
     onExportClick: () -> Unit,
     onConfigureExportClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onStarClick: () -> Unit,
+    onSelectionToggle: () -> Unit,
+    onSelectionStart: () -> Unit,
     onOcrViewClick: (() -> Unit)?,
     onShareClick: (() -> Unit)?,
     onDetailClick: (() -> Unit)?,
 ) {
+    if (isSelectionMode) {
+        DocumentCard(
+            modifier = modifier,
+            document = document,
+            exportEnabled = exportEnabled,
+            isProcessing = isProcessing,
+            isExporting = isExporting,
+            isSelectionMode = true,
+            isSelected = isSelected,
+            onPreviewClick = onPreviewClick,
+            onRenameClick = onRenameClick,
+            onExportClick = onExportClick,
+            onConfigureExportClick = onConfigureExportClick,
+            onStarClick = onStarClick,
+            onSelectionToggle = onSelectionToggle,
+            onSelectionStart = onSelectionStart,
+            onOcrViewClick = onOcrViewClick,
+            onShareClick = onShareClick,
+            onDetailClick = onDetailClick,
+        )
+        return
+    }
     val dismissState = rememberSwipeToDismissBoxState()
 
     LaunchedEffect(dismissState.currentValue) {
@@ -667,6 +695,7 @@ fun SwipeableDocumentCard(
         },
     ) {
         DocumentCard(
+            modifier = modifier,
             document = document,
             exportEnabled = exportEnabled,
             isProcessing = isProcessing,
@@ -676,6 +705,8 @@ fun SwipeableDocumentCard(
             onExportClick = onExportClick,
             onConfigureExportClick = onConfigureExportClick,
             onStarClick = onStarClick,
+            onSelectionToggle = onSelectionToggle,
+            onSelectionStart = onSelectionStart,
             onOcrViewClick = onOcrViewClick,
             onShareClick = onShareClick,
             onDetailClick = onDetailClick,
@@ -687,27 +718,44 @@ fun SwipeableDocumentCard(
 
 @Composable
 fun DocumentCard(
+    modifier: Modifier = Modifier,
     document: ScannedDocument,
     exportEnabled: Boolean,
     isProcessing: Boolean = false,
     isExporting: Boolean = false,
+    isSelectionMode: Boolean = false,
+    isSelected: Boolean = false,
     onPreviewClick: () -> Unit,
     onRenameClick: () -> Unit,
     onExportClick: () -> Unit,
     onConfigureExportClick: () -> Unit,
     onStarClick: () -> Unit = {},
+    onSelectionToggle: () -> Unit = {},
+    onSelectionStart: () -> Unit = {},
     onOcrViewClick: (() -> Unit)? = null,
     onShareClick: (() -> Unit)? = null,
     onDetailClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier =
-            Modifier
+            modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.surfaceVariant)
-                .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(16.dp))
-                .then(if (onDetailClick != null) Modifier.clickable { onDetailClick() } else Modifier)
+                .border(
+                    width = if (isSelected) 2.dp else 1.dp,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else NexarExtraTheme.colors.borderSubtle,
+                    shape = RoundedCornerShape(16.dp),
+                )
+                .combinedClickable(
+                    onClick = {
+                        when {
+                            isSelectionMode -> onSelectionToggle()
+                            onDetailClick != null -> onDetailClick()
+                        }
+                    },
+                    onLongClick = onSelectionStart,
+                )
                 .padding(16.dp)
                 .semantics(mergeDescendants = true) {
                     contentDescription =
@@ -745,16 +793,25 @@ fun DocumentCard(
                     maxLines = 1,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(
-                    onClick = onStarClick,
-                    modifier = Modifier.size(28.dp),
-                ) {
+                if (isSelectionMode) {
                     Icon(
-                        imageVector = if (document.isStarred) Icons.Default.Star else Icons.Outlined.StarBorder,
-                        contentDescription = if (document.isStarred) "Unstar" else "Star",
-                        tint = if (document.isStarred) Color(0xFFF59E0B) else NexarExtraTheme.colors.foregroundMuted,
-                        modifier = Modifier.size(18.dp),
+                        imageVector = if (isSelected) Icons.Default.CheckCircle else Icons.Default.Checklist,
+                        contentDescription = if (isSelected) "Selected" else "Not selected",
+                        tint = if (isSelected) MaterialTheme.colorScheme.primary else NexarExtraTheme.colors.foregroundMuted,
+                        modifier = Modifier.size(20.dp),
                     )
+                } else {
+                    IconButton(
+                        onClick = onStarClick,
+                        modifier = Modifier.size(28.dp),
+                    ) {
+                        Icon(
+                            imageVector = if (document.isStarred) Icons.Default.Star else Icons.Outlined.StarBorder,
+                            contentDescription = if (document.isStarred) "Unstar" else "Star",
+                            tint = if (document.isStarred) Color(0xFFF59E0B) else NexarExtraTheme.colors.foregroundMuted,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
                 }
             }
             Spacer(Modifier.height(3.dp))
@@ -826,59 +883,111 @@ fun DocumentCard(
                 }
             }
 
-            Spacer(Modifier.height(10.dp))
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(7.dp),
-                modifier = Modifier.horizontalScroll(rememberScrollState()),
-            ) {
-                DocumentActionChip(
-                    icon = Icons.Default.Visibility,
-                    label = "Preview",
-                    onClick = onPreviewClick,
-                )
-                DocumentActionChip(
-                    icon = Icons.Default.Edit,
-                    label = "Rename",
-                    onClick = onRenameClick,
-                )
-                when {
-                    isExporting ->
-                        DocumentActionChip(
-                            icon = Icons.Default.CloudUpload,
-                            label = "Exporting…",
-                            onClick = {},
-                            accent = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
-                            showSpinner = true,
-                        )
-                    exportEnabled ->
-                        DocumentActionChip(
-                            icon = if (document.isExportedToStorage) Icons.Default.CheckCircle else Icons.Default.CloudUpload,
-                            label = if (document.isExportedToStorage) "Re-export" else "Export",
-                            onClick = onExportClick,
-                        )
-                    else ->
-                        DocumentActionChip(
-                            icon = Icons.Default.FolderOff,
-                            label = "Set folder",
-                            onClick = onConfigureExportClick,
-                            accent = NexarExtraTheme.colors.warning,
-                        )
-                }
-                if (onOcrViewClick != null && document.ocrProcessed && document.ocrText.isNotBlank()) {
+            if (!isSelectionMode) {
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(7.dp),
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                ) {
                     DocumentActionChip(
-                        icon = Icons.AutoMirrored.Filled.TextSnippet,
-                        label = "OCR",
-                        onClick = onOcrViewClick,
+                        icon = Icons.Default.Visibility,
+                        label = "Preview",
+                        onClick = onPreviewClick,
                     )
-                }
-                if (onShareClick != null && document.pdfUri != null) {
                     DocumentActionChip(
-                        icon = Icons.Default.Share,
-                        label = "Share",
-                        onClick = onShareClick,
+                        icon = Icons.Default.Edit,
+                        label = "Rename",
+                        onClick = onRenameClick,
                     )
+                    when {
+                        isExporting ->
+                            DocumentActionChip(
+                                icon = Icons.Default.CloudUpload,
+                                label = "Exporting…",
+                                onClick = {},
+                                accent = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                                showSpinner = true,
+                            )
+                        exportEnabled ->
+                            DocumentActionChip(
+                                icon = if (document.isExportedToStorage) Icons.Default.CheckCircle else Icons.Default.CloudUpload,
+                                label = if (document.isExportedToStorage) "Re-export" else "Export",
+                                onClick = onExportClick,
+                            )
+                        else ->
+                            DocumentActionChip(
+                                icon = Icons.Default.FolderOff,
+                                label = "Set folder",
+                                onClick = onConfigureExportClick,
+                                accent = NexarExtraTheme.colors.warning,
+                            )
+                    }
+                    if (onOcrViewClick != null && document.ocrProcessed && document.ocrText.isNotBlank()) {
+                        DocumentActionChip(
+                            icon = Icons.AutoMirrored.Filled.TextSnippet,
+                            label = "OCR",
+                            onClick = onOcrViewClick,
+                        )
+                    }
+                    if (onShareClick != null && document.pdfUri != null) {
+                        DocumentActionChip(
+                            icon = Icons.Default.Share,
+                            label = "Share",
+                            onClick = onShareClick,
+                        )
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun BulkSelectionBar(
+    selectedCount: Int,
+    exportEnabled: Boolean,
+    onExportClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onCancelClick: () -> Unit,
+) {
+    Row(
+        modifier =
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(18.dp))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .border(1.dp, NexarExtraTheme.colors.borderSubtle, RoundedCornerShape(18.dp))
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "$selectedCount selected",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            if (exportEnabled) {
+                NexarCircleIconButton(
+                    icon = Icons.Default.CloudUpload,
+                    contentDescription = "Export selected",
+                    onClick = onExportClick,
+                )
+            }
+            NexarCircleIconButton(
+                icon = Icons.Default.Delete,
+                contentDescription = "Delete selected",
+                onClick = onDeleteClick,
+                containerColor = Color(0xFFFFEAEA),
+                iconTint = Color(0xFFB00020),
+                borderColor = Color(0xFFFFCACA),
+            )
+            NexarCircleIconButton(
+                icon = Icons.Default.Close,
+                contentDescription = "Cancel selection",
+                onClick = onCancelClick,
+            )
         }
     }
 }

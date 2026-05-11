@@ -34,6 +34,7 @@ import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardFilter
 import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardUiState
 import com.mohamedfaridelsherbini.nexar.presentation.dashboard.SortOrder
 import com.mohamedfaridelsherbini.nexar.ui.components.BatchExportingBanner
+import com.mohamedfaridelsherbini.nexar.ui.components.BulkSelectionBar
 import com.mohamedfaridelsherbini.nexar.ui.components.LocalStorageStatus
 import com.mohamedfaridelsherbini.nexar.ui.components.NexarEmptyState
 import com.mohamedfaridelsherbini.nexar.ui.components.NexarErrorBanner
@@ -60,6 +61,9 @@ fun DashboardScreen(
     onStarClick: (ScannedDocument) -> Unit,
     onSortChanged: (SortOrder) -> Unit,
     onBatchExportClick: () -> Unit,
+    onSelectionModeChanged: (Boolean) -> Unit,
+    onDocumentSelectionToggled: (String) -> Unit,
+    onBulkDeleteClick: () -> Unit,
     onDetailClick: (ScannedDocument) -> Unit,
     onBatchResultDismissed: () -> Unit,
     onSearchQueryChanged: (String) -> Unit,
@@ -123,6 +127,16 @@ fun DashboardScreen(
                 NexarErrorBanner(error = error, onDismiss = onErrorDismissed)
             }
 
+            if (uiState.isSelectionMode) {
+                BulkSelectionBar(
+                    selectedCount = uiState.selectedDocumentIds.size,
+                    exportEnabled = storageLocation != null && uiState.selectedDocumentIds.isNotEmpty(),
+                    onExportClick = onBatchExportClick,
+                    onDeleteClick = onBulkDeleteClick,
+                    onCancelClick = { onSelectionModeChanged(false) },
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -139,13 +153,20 @@ fun DashboardScreen(
                     shape = RoundedCornerShape(18.dp),
                     border = BorderStroke(1.dp, NexarExtraTheme.colors.borderSubtle),
                 ) {
-                    Text(
-                        text = "${uiState.visibleDocuments.size} scans",
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                        style = MaterialTheme.typography.labelMedium,
-                        fontWeight = FontWeight.SemiBold,
-                        color = NexarExtraTheme.colors.foregroundSecondary,
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            text = "${uiState.visibleDocuments.size} scans",
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = NexarExtraTheme.colors.foregroundSecondary,
+                        )
+                        if (!uiState.isSelectionMode && uiState.visibleDocuments.isNotEmpty()) {
+                            TextButton(onClick = { onSelectionModeChanged(true) }) {
+                                Text("Select", fontWeight = FontWeight.SemiBold)
+                            }
+                        }
+                    }
                 }
             }
 
@@ -197,6 +218,15 @@ fun DashboardScreen(
                                     onConfigureExportClick = onSetStorageClick,
                                     onDeleteClick = { onDeleteClick(doc) },
                                     onStarClick = { onStarClick(doc) },
+                                    isSelectionMode = uiState.isSelectionMode,
+                                    isSelected = doc.id in uiState.selectedDocumentIds,
+                                    onSelectionToggle = { onDocumentSelectionToggled(doc.id) },
+                                    onSelectionStart = {
+                                        if (!uiState.isSelectionMode) {
+                                            onSelectionModeChanged(true)
+                                        }
+                                        onDocumentSelectionToggled(doc.id)
+                                    },
                                     onOcrViewClick =
                                         if (doc.ocrProcessed && doc.ocrText.isNotBlank()) {
                                             { onOcrSheetOpen(doc.id) }
@@ -225,7 +255,9 @@ fun DashboardScreen(
                     .align(Alignment.BottomCenter)
                     .padding(horizontal = 24.dp, vertical = 24.dp),
         ) {
-            NexarFAB(onClick = onScanClick, hasDocuments = uiState.documents.isNotEmpty())
+            if (!uiState.isSelectionMode) {
+                NexarFAB(onClick = onScanClick, hasDocuments = uiState.documents.isNotEmpty())
+            }
         }
     }
 

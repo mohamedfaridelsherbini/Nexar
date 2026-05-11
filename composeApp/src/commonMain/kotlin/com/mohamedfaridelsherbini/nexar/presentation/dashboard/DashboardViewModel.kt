@@ -28,6 +28,8 @@ private data class UiPreferences(
     val sort: SortOrder = SortOrder.Newest,
     val searchQuery: String = "",
     val activeFilter: DashboardFilter = DashboardFilter.All,
+    val isSelectionMode: Boolean = false,
+    val selectedDocumentIds: Set<String> = emptySet(),
     val ocrSheetDocumentId: String? = null,
     val batchExportResult: Pair<Int, Int>? = null,
     val hasLoaded: Boolean = false,
@@ -83,6 +85,8 @@ class DashboardViewModel(
                 analytics = analyticsUseCase(sorted),
                 searchQuery = prefs.searchQuery,
                 activeFilter = prefs.activeFilter,
+                isSelectionMode = prefs.isSelectionMode,
+                selectedDocumentIds = prefs.selectedDocumentIds,
                 ocrSheetDocumentId = prefs.ocrSheetDocumentId,
                 isLoadingDocuments = !prefs.hasLoaded,
                 processingDocumentId = prefs.processingDocumentId,
@@ -131,7 +135,10 @@ class DashboardViewModel(
     }
 
     fun onDeleteDocument(document: ScannedDocument) {
-        viewModelScope.launch { useCases.deleteDocument(document) }
+        viewModelScope.launch {
+            useCases.deleteDocument(document)
+            _prefs.update { prefs -> prefs.copy(selectedDocumentIds = prefs.selectedDocumentIds - document.id) }
+        }
     }
 
     fun onToggleStar(document: ScannedDocument) {
@@ -166,9 +173,15 @@ class DashboardViewModel(
         viewModelScope.launch {
             _prefs.update { it.copy(isBatchExporting = true) }
             try {
-                val docs = uiState.value.documents
+                val docs = selectedDocumentsOrAll()
                 val result = useCases.batchExport(docs)
-                _prefs.update { it.copy(batchExportResult = result) }
+                _prefs.update {
+                    it.copy(
+                        batchExportResult = result,
+                        isSelectionMode = false,
+                        selectedDocumentIds = emptySet(),
+                    )
+                }
                 if (result.first > 0) triggerSuccessHaptic()
             } catch (_: Exception) {
                 _prefs.update { it.copy(error = NexarError.ExportFailed("batch export")) }
@@ -180,6 +193,39 @@ class DashboardViewModel(
 
     fun onBatchResultDismissed() {
         _prefs.update { it.copy(batchExportResult = null) }
+    }
+
+    fun onSelectionModeChanged(enabled: Boolean) {
+        _prefs.update {
+            if (enabled) {
+                it.copy(isSelectionMode = true)
+            } else {
+                it.copy(isSelectionMode = false, selectedDocumentIds = emptySet())
+            }
+        }
+    }
+
+    fun onDocumentSelectionToggled(documentId: String) {
+        _prefs.update { prefs ->
+            val next =
+                if (documentId in prefs.selectedDocumentIds) {
+                    prefs.selectedDocumentIds - documentId
+                } else {
+                    prefs.selectedDocumentIds + documentId
+                }
+            prefs.copy(
+                isSelectionMode = next.isNotEmpty(),
+                selectedDocumentIds = next,
+            )
+        }
+    }
+
+    fun onBulkDeleteSelected() {
+        viewModelScope.launch {
+            val selected = selectedDocuments()
+            selected.forEach { useCases.deleteDocument(it) }
+            _prefs.update { it.copy(isSelectionMode = false, selectedDocumentIds = emptySet()) }
+        }
     }
 
     fun onCreateFolder(folderName: String) {
@@ -236,4 +282,14 @@ class DashboardViewModel(
             DashboardFilter.Starred -> filter { it.isStarred }
             else -> filter.toCategory()?.let { cat -> filter { it.category == cat } } ?: this
         }
+
+    private fun selectedDocuments(): List<ScannedDocument> {
+        val selectedIds = _prefs.value.selectedDocumentIds
+        return uiState.value.documents.filter { it.id in selectedIds }
+    }
+
+    private fun selectedDocumentsOrAll(): List<ScannedDocument> {
+        val selected = selectedDocuments()
+        return if (selected.isNotEmpty()) selected else uiState.value.documents
+    }
 }

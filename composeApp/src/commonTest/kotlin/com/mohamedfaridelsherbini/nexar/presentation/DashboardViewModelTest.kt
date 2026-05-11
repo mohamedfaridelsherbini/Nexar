@@ -183,6 +183,24 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `bulk delete removes all selected documents from visible state`() =
+        runTest(testDispatcher) {
+            val job = activateState()
+            docRepo.setDocuments(listOf(doc("1"), doc("2"), doc("3")))
+            advanceUntilIdle()
+
+            viewModel.onDocumentSelectionToggled("1")
+            viewModel.onDocumentSelectionToggled("3")
+            viewModel.onBulkDeleteSelected()
+            advanceUntilIdle()
+
+            assertEquals(listOf("2"), viewModel.uiState.value.documents.map { it.id })
+            assertFalse(viewModel.uiState.value.isSelectionMode)
+            assertTrue(viewModel.uiState.value.selectedDocumentIds.isEmpty())
+            job.cancel()
+        }
+
+    @Test
     fun `visibleDocuments matches all documents with no filter or search`() =
         runTest(testDispatcher) {
             val job = activateState()

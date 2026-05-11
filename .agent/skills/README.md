@@ -16,6 +16,8 @@ Each capability is a folder with a **`SKILL.md`** file (YAML frontmatter + instr
 | `swift-static-analysis/` | SwiftLint, SwiftFormat, `xcodebuild analyze` |
 | `kmp-ci-code-analysis/` | Combined CI for KMP + iOS |
 | `nexar-roadmap-sync/` | Keep `plan.md` / `future-plan.md` aligned |
+| `permissions-health/` | Implement shared Settings permission health + platform status/deep links |
+| `roadmap-feature-pass/` | Take the next roadmap item from slice selection through verification |
 
 ## Cursor IDE
 

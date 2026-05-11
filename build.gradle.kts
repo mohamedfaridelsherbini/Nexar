@@ -11,6 +11,7 @@ plugins {
     alias(libs.plugins.androidx.room) apply false
     alias(libs.plugins.detekt)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.kover) apply false
 }
 
 subprojects {

@@ -7,3 +7,11 @@ Canonical skill folders live under **`.agent/skills/`**, per Android Studio **Ge
 Each name here is a **symlink** to the matching folder under `.agent/skills/` so Cursor and Android Studio share one source of truth.
 
 Edit files in **`.agent/skills/<name>/`**, not duplicate copies under `.cursor/skills/`.
+
+Current shared skills include:
+- `kmp-ci-code-analysis`
+- `kotlin-static-analysis`
+- `nexar-roadmap-sync`
+- `permissions-health`
+- `roadmap-feature-pass`
+- `swift-static-analysis`

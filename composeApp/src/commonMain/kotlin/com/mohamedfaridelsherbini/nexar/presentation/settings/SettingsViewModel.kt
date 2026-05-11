@@ -22,6 +22,7 @@ data class SettingsUiState(
 class SettingsViewModel(
     private val getSettings: GetSettingsUseCase,
     private val observeStorageLocation: ObserveStorageLocationUseCase,
+    private val versionProvider: () -> String = ::appVersionName,
 ) : ViewModel() {
 
     val uiState: StateFlow<SettingsUiState> =
@@ -34,12 +35,12 @@ class SettingsViewModel(
                 exportRemindersEnabled = settings.exportRemindersEnabled,
                 duplicateAlertsEnabled = settings.duplicateAlertsEnabled,
                 storageLocation = location,
-                version = appVersionName(),
+                version = versionProvider(),
             )
         }.stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = SettingsUiState()
+            initialValue = SettingsUiState(version = versionProvider())
         )
 
     fun onThemeChanged(theme: AppTheme) {

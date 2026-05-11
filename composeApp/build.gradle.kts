@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.kover)
     id("org.jetbrains.kotlin.plugin.serialization") version "2.3.21"
     alias(libs.plugins.ksp)
     alias(libs.plugins.androidx.room)
@@ -155,4 +156,45 @@ dependencies {
     add("kspAndroid", libs.androidx.room.compiler)
     add("kspIosArm64", libs.androidx.room.compiler)
     add("kspIosSimulatorArm64", libs.androidx.room.compiler)
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                androidGeneratedClasses()
+                packages(
+                    "com.mohamedfaridelsherbini.nexar.ui",
+                    "com.mohamedfaridelsherbini.nexar.ui.components",
+                    "com.mohamedfaridelsherbini.nexar.ui.theme",
+                    "com.mohamedfaridelsherbini.nexar.navigation",
+                    "com.mohamedfaridelsherbini.nexar.notifications",
+                    "com.mohamedfaridelsherbini.nexar.platform",
+                    "com.mohamedfaridelsherbini.nexar.storage",
+                    "com.mohamedfaridelsherbini.nexar.widget",
+                    "com.mohamedfaridelsherbini.nexar.di",
+                    "com.mohamedfaridelsherbini.nexar.data.db",
+                    "com.mohamedfaridelsherbini.nexar.data.repo",
+                    "nexar.composeapp.generated.resources",
+                )
+                classes(
+                    "com.mohamedfaridelsherbini.nexar.AppKt",
+                    "com.mohamedfaridelsherbini.nexar.BuildConfig",
+                    "com.mohamedfaridelsherbini.nexar.ComposableSingletons*",
+                    "com.mohamedfaridelsherbini.nexar.MainActivity*",
+                    "com.mohamedfaridelsherbini.nexar.NexarApplication*",
+                    "com.mohamedfaridelsherbini.nexar.ScannerBridge*",
+                    "com.mohamedfaridelsherbini.nexar.domain.usecase.AndroidOcrProcessor*",
+                    "com.mohamedfaridelsherbini.nexar.domain.usecase.IosOcrProcessor*",
+                    "com.mohamedfaridelsherbini.nexar.domain.usecase.NexarSettingsPreferences",
+                    "com.mohamedfaridelsherbini.nexar.domain.usecase.OcrProcessor_*",
+                )
+            }
+        }
+        verify {
+            rule {
+                minBound(80)
+            }
+        }
+    }
 }

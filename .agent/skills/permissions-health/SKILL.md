@@ -25,6 +25,7 @@ Surface permission health in Settings/About with:
 
 Prefer this shape:
 - shared domain or platform facade for permission status reads
+- shared permission status model with explicit enums/data classes
 - shared `SettingsViewModel` state for permission rows
 - shared Settings UI rendering
 - Android and iOS actual/platform implementations
@@ -42,6 +43,10 @@ Do not start in UI. Start from the platform seam and state model.
    - Keep it small.
    - Prefer explicit enums/data classes over raw strings.
    - Include enough information for UI copy and CTA visibility.
+   - Prefer one model such as:
+     - `PermissionArea`: camera, notifications, files
+     - `PermissionState`: granted, denied, unavailable, not_required
+     - `PermissionAction`: none, open_settings
 3. Implement platform-specific readers.
    - Android: camera permission, notification permission, and storage/files capability relevant to the current export/import flow.
    - iOS: camera, photo/files capability if applicable, and notifications.
@@ -61,6 +66,49 @@ Do not start in UI. Start from the platform seam and state model.
    - Write unit tests with `GIVEN / WHEN / THEN` naming and structure.
    - Compile Android and iOS targets.
    - If coverage is enforced, rerun Kover verification.
+
+## Platform checklist
+
+### Android
+
+- Camera: `android.Manifest.permission.CAMERA`
+- Notifications: `android.Manifest.permission.POST_NOTIFICATIONS` where applicable by SDK level
+- Files/storage:
+  - do not invent a legacy storage permission if the app flow uses SAF
+  - expose capability based on the current export/import mechanism
+- Settings deep link: app-details settings intent, not a custom screen-specific URL
+
+### iOS
+
+- Camera: `AVCaptureDevice` or equivalent camera authorization status
+- Notifications: `UNUserNotificationCenter` authorization status
+- Files/storage:
+  - if the app uses document pickers or share sheets without a dedicated permission, prefer `not_required`
+- Settings deep link: app settings URL only from the platform action layer
+
+## Test pattern
+
+Write shared tests before UI tests.
+
+Preferred test names:
+- `GIVEN denied camera permission WHEN settings state is built THEN camera row shows denied with open settings action`
+- `GIVEN notification permission is not required WHEN platform status is mapped THEN row shows not required`
+- `GIVEN user taps open settings WHEN row action is triggered THEN platform bridge is called once`
+
+Preferred structure:
+1. `GIVEN`: set up fake permission provider and fake settings action bridge
+2. `WHEN`: build or refresh `SettingsViewModel` state, or trigger the row action
+3. `THEN`: assert the shared row state and action behavior
+
+## Slice order
+
+Implement in this order unless the user directs otherwise:
+1. shared status model
+2. platform readers
+3. `SettingsViewModel` wiring
+4. Settings UI rows
+5. settings deep link action
+6. tests and verification
 
 ## Constraints
 
@@ -85,4 +133,5 @@ Do not start in UI. Start from the platform seam and state model.
 |----------|------|
 | **`.agent/skills/permissions-health/`** | Canonical (Android Studio Gemini). |
 | **`.cursor/skills/permissions-health`** | Symlink for Cursor Agent. |
-| **`.codex/skills/permissions-health/`** | Codex-local copy. |
+| **`.codex/skills/permissions-health`** | Symlink for Codex. |
+| **`.claude/skills/permissions-health`** | Symlink for Claude. |

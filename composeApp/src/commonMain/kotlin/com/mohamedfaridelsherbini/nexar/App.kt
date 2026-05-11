@@ -181,6 +181,8 @@ fun App() {
                             onStorageClick = { showStoragePicker = true },
                             onExportRemindersToggled = { settingsViewModel.onExportRemindersToggled(it) },
                             onDuplicateAlertsToggled = { settingsViewModel.onDuplicateAlertsToggled(it) },
+                            onPermissionActionClick = { settingsViewModel.onPermissionActionClicked(it) },
+                            onScreenShown = { settingsViewModel.refreshPermissionHealth() },
                         )
                     }
                 },

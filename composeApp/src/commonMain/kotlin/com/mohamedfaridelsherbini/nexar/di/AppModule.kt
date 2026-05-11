@@ -26,6 +26,7 @@ import com.mohamedfaridelsherbini.nexar.domain.usecase.StorageAnalyticsUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.ToggleStarUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.UpdateDocumentUseCase
 import com.mohamedfaridelsherbini.nexar.domain.usecase.createOcrProcessor
+import com.mohamedfaridelsherbini.nexar.platform.createPermissionHealthProvider
 import com.mohamedfaridelsherbini.nexar.presentation.dashboard.DashboardViewModel
 import com.mohamedfaridelsherbini.nexar.presentation.settings.SettingsViewModel
 import org.koin.core.module.dsl.viewModel
@@ -65,6 +66,7 @@ val commonModule =
 
         // ── Settings ──────────────────────────────────────────────────────────────
         single { GetSettingsUseCase() }
+        single { createPermissionHealthProvider() }
 
         // ── Post-scan intelligence pipeline ───────────────────────────────────────
         single {
@@ -110,6 +112,7 @@ val commonModule =
             SettingsViewModel(
                 getSettings = get(),
                 observeStorageLocation = get(),
+                permissionHealthProvider = get(),
             )
         }
     }

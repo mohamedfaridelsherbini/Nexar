@@ -8,12 +8,15 @@ import com.mohamedfaridelsherbini.nexar.domain.model.ScannedDocument
 import com.mohamedfaridelsherbini.nexar.domain.repository.DocumentRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
 
 class DocumentRepositoryImpl(
     private val dao: DocumentDao,
     private val ftsDao: DocumentFtsDao,
 ) : DocumentRepository {
     override fun observeDocuments() = dao.getAllDocuments().map { entities -> entities.map { it.toDomain() } }
+
+    override fun observeTrashedDocuments() = dao.getTrashedDocuments().map { entities -> entities.map { it.toDomain() } }
 
     override suspend fun saveDocument(document: ScannedDocument) {
         dao.insertDocument(DocumentEntity.fromDomain(document))
@@ -35,6 +38,14 @@ class DocumentRepositoryImpl(
     }
 
     override suspend fun deleteDocument(document: ScannedDocument) {
+        dao.moveToTrash(document.id, Clock.System.now().toEpochMilliseconds())
+    }
+
+    override suspend fun restoreDocument(documentId: String) {
+        dao.restoreDocument(documentId)
+    }
+
+    override suspend fun permanentlyDeleteDocument(document: ScannedDocument) {
         dao.deleteDocument(DocumentEntity.fromDomain(document))
         ftsDao.deleteById(document.id)
     }

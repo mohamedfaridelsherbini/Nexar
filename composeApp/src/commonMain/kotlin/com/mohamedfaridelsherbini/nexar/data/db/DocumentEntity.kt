@@ -24,6 +24,7 @@ data class DocumentEntity(
     val extractedAmount: String? = null,
     val extractedDate: String? = null,
     val duplicateOfId: String? = null,
+    val trashedAtMillis: Long? = null,
 ) {
     fun toDomain() =
         ScannedDocument(
@@ -41,6 +42,7 @@ data class DocumentEntity(
             extractedAmount = extractedAmount,
             extractedDate = extractedDate,
             duplicateOfId = duplicateOfId,
+            trashedAtMillis = trashedAtMillis,
         )
 
     companion object {
@@ -60,6 +62,7 @@ data class DocumentEntity(
                 extractedAmount = doc.extractedAmount,
                 extractedDate = doc.extractedDate,
                 duplicateOfId = doc.duplicateOfId,
+                trashedAtMillis = doc.trashedAtMillis,
             )
     }
 }

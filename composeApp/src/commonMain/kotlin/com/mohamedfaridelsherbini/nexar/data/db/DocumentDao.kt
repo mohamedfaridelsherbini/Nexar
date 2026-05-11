@@ -10,8 +10,11 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface DocumentDao {
-    @Query("SELECT * FROM documents ORDER BY dateMillis DESC")
+    @Query("SELECT * FROM documents WHERE trashedAtMillis IS NULL ORDER BY dateMillis DESC")
     fun getAllDocuments(): Flow<List<DocumentEntity>>
+
+    @Query("SELECT * FROM documents WHERE trashedAtMillis IS NOT NULL ORDER BY trashedAtMillis DESC")
+    fun getTrashedDocuments(): Flow<List<DocumentEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertDocument(document: DocumentEntity)
@@ -21,6 +24,15 @@ interface DocumentDao {
 
     @Delete
     suspend fun deleteDocument(document: DocumentEntity)
+
+    @Query("UPDATE documents SET trashedAtMillis = :trashedAtMillis WHERE id = :id")
+    suspend fun moveToTrash(
+        id: String,
+        trashedAtMillis: Long,
+    )
+
+    @Query("UPDATE documents SET trashedAtMillis = NULL WHERE id = :id")
+    suspend fun restoreDocument(id: String)
 
     @Query("SELECT * FROM documents WHERE id = :id")
     suspend fun getDocumentById(id: String): DocumentEntity?
@@ -53,6 +65,7 @@ interface DocumentDao {
         SELECT d.* FROM documents d
         JOIN documents_fts ON d.id = documents_fts.documentId
         WHERE documents_fts MATCH :query
+          AND d.trashedAtMillis IS NULL
         ORDER BY d.dateMillis DESC
     """,
     )

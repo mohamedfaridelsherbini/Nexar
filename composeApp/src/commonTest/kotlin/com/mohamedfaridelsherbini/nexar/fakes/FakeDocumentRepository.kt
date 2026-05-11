@@ -21,7 +21,9 @@ class FakeDocumentRepository : DocumentRepository {
         _documents.value = docs
     }
 
-    override fun observeDocuments(): Flow<List<ScannedDocument>> = _documents
+    override fun observeDocuments(): Flow<List<ScannedDocument>> = _documents.map { docs -> docs.filter { it.trashedAtMillis == null } }
+
+    override fun observeTrashedDocuments(): Flow<List<ScannedDocument>> = _documents.map { docs -> docs.filter { it.trashedAtMillis != null } }
 
     override suspend fun saveDocument(document: ScannedDocument) {
         saved.add(document)
@@ -43,6 +45,30 @@ class FakeDocumentRepository : DocumentRepository {
     }
 
     override suspend fun deleteDocument(document: ScannedDocument) {
+        _documents.update { docs ->
+            docs.map { doc ->
+                if (doc.id == document.id) {
+                    doc.copy(trashedAtMillis = 1L)
+                } else {
+                    doc
+                }
+            }
+        }
+    }
+
+    override suspend fun restoreDocument(documentId: String) {
+        _documents.update { docs ->
+            docs.map { doc ->
+                if (doc.id == documentId) {
+                    doc.copy(trashedAtMillis = null)
+                } else {
+                    doc
+                }
+            }
+        }
+    }
+
+    override suspend fun permanentlyDeleteDocument(document: ScannedDocument) {
         _documents.update { it.filter { doc -> doc.id != document.id } }
     }
 
@@ -63,6 +89,7 @@ class FakeDocumentRepository : DocumentRepository {
                 docs
             } else {
                 docs.filter { doc ->
+                    doc.trashedAtMillis == null &&
                     terms.any { term ->
                         doc.name.contains(term, ignoreCase = true) ||
                             doc.ocrText.contains(term, ignoreCase = true) ||

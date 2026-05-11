@@ -168,6 +168,21 @@ class DashboardViewModelTest {
         }
 
     @Test
+    fun `soft deleted documents disappear from dashboard lists`() =
+        runTest(testDispatcher) {
+            val job = activateState()
+            val target = doc("1")
+            docRepo.setDocuments(listOf(target, doc("2")))
+            advanceUntilIdle()
+
+            viewModel.onDeleteDocument(target)
+            advanceUntilIdle()
+
+            assertEquals(listOf("2"), viewModel.uiState.value.documents.map { it.id })
+            job.cancel()
+        }
+
+    @Test
     fun `visibleDocuments matches all documents with no filter or search`() =
         runTest(testDispatcher) {
             val job = activateState()

@@ -6,6 +6,8 @@ import kotlinx.coroutines.flow.Flow
 interface DocumentRepository {
     fun observeDocuments(): Flow<List<ScannedDocument>>
 
+    fun observeTrashedDocuments(): Flow<List<ScannedDocument>>
+
     suspend fun saveDocument(document: ScannedDocument)
 
     suspend fun updateDocument(document: ScannedDocument)
@@ -16,6 +18,10 @@ interface DocumentRepository {
     )
 
     suspend fun deleteDocument(document: ScannedDocument)
+
+    suspend fun restoreDocument(documentId: String)
+
+    suspend fun permanentlyDeleteDocument(document: ScannedDocument)
 
     suspend fun markExported(id: String)
 

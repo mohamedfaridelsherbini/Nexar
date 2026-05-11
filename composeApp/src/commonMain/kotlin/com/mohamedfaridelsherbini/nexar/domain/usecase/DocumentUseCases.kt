@@ -40,6 +40,28 @@ class DeleteDocumentUseCase(
     }
 }
 
+class ObserveTrashedDocumentsUseCase(
+    private val documentRepository: DocumentRepository,
+) {
+    operator fun invoke(): Flow<List<ScannedDocument>> = documentRepository.observeTrashedDocuments()
+}
+
+class RestoreDocumentUseCase(
+    private val documentRepository: DocumentRepository,
+) {
+    suspend operator fun invoke(documentId: String) {
+        documentRepository.restoreDocument(documentId)
+    }
+}
+
+class PermanentlyDeleteDocumentUseCase(
+    private val documentRepository: DocumentRepository,
+) {
+    suspend operator fun invoke(document: ScannedDocument) {
+        documentRepository.permanentlyDeleteDocument(document)
+    }
+}
+
 class UpdateDocumentUseCase(
     private val documentRepository: DocumentRepository,
 ) {

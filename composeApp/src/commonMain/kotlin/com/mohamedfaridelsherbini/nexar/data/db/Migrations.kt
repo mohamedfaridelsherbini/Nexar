@@ -42,3 +42,10 @@ val MIGRATION_3_4 =
             )
         }
     }
+
+val MIGRATION_6_7 =
+    object : Migration(6, 7) {
+        override fun migrate(connection: SQLiteConnection) {
+            connection.execSQL("ALTER TABLE documents ADD COLUMN trashedAtMillis INTEGER")
+        }
+    }
